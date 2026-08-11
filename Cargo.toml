@@ -1,0 +1,18 @@
+[package]
+name = "shooting-camera"
+version = "0.1.0"
+edition = "2024"
+build = "build.rs"
+
+[dependencies]
+image = "0.25.10"
+nokhwa = {
+    version ="0.10.11",
+    features = [
+            "input-native"
+        ]
+}
+slint = "1.17.1"
+
+[build-dependencies]
+slint-build = "1.17.1"

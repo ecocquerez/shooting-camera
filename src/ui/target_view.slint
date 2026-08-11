@@ -1,0 +1,339 @@
+import { ImpactViewData } from "types.slint";
+
+export component TargetView inherits Rectangle {
+    // ─────────────────────────────────────────────
+    // Image caméra
+    // ─────────────────────────────────────────────
+
+    in property <image> camera-image;
+
+    in property <float> image-width: 720;
+    in property <float> image-height: 480;
+
+    // ─────────────────────────────────────────────
+    // Centre de la cible
+    // Coordonnées dans l'image
+    // ─────────────────────────────────────────────
+
+    in property <float> center-x: 360;
+    in property <float> center-y: 240;
+
+    in property <bool> center-visible: true;
+    in property <bool> setting-center: false;
+
+    // ─────────────────────────────────────────────
+    // Calibration
+    // ─────────────────────────────────────────────
+
+    in property <bool> calibration-visible: false;
+
+    in property <float> horizontal-a-x: 0;
+    in property <float> horizontal-a-y: 0;
+
+    in property <float> horizontal-b-x: 0;
+    in property <float> horizontal-b-y: 0;
+
+    in property <float> vertical-a-x: 0;
+    in property <float> vertical-a-y: 0;
+
+    in property <float> vertical-b-x: 0;
+    in property <float> vertical-b-y: 0;
+
+    in property <bool> horizontal-a-visible: false;
+    in property <bool> horizontal-b-visible: false;
+    in property <bool> vertical-a-visible: false;
+    in property <bool> vertical-b-visible: false;
+    // ─────────────────────────────────────────────
+    // Impacts
+    // ─────────────────────────────────────────────
+    in property <[ImpactViewData]> impacts: [];
+    in property <int> selected-impact: -1;
+    // Pour le moment on garde cette partie pour la suite.
+
+    // ─────────────────────────────────────────────
+    // Callback du composant
+    // ─────────────────────────────────────────────
+
+    callback image-clicked(float, float);
+
+    background: #181818;
+
+    // ═════════════════════════════════════════════
+    // Image
+    // ═════════════════════════════════════════════
+
+    Image {
+        source: camera-image;
+
+        width: parent.width;
+        height: parent.height;
+
+        image-fit: contain;
+    }
+
+    // ═════════════════════════════════════════════
+    // Centre de la cible
+    // ═════════════════════════════════════════════
+
+    if center-visible: Rectangle {
+        width: setting-center ? 22px : 16px;
+        height: setting-center ? 22px : 16px;
+
+        x: image_to_view_x(center-x) * 1px
+            - self.width / 2;
+
+        y: image_to_view_y(center-y) * 1px
+            - self.height / 2;
+
+        background: setting-center
+            ? #ffaa00
+            : #ff3030;
+
+        border-radius: self.width / 2;
+
+        border-width: 2px;
+        border-color: white;
+    }
+
+    // ═════════════════════════════════════════════
+    // Point horizontal A
+    // ═════════════════════════════════════════════
+
+    if calibration-visible && horizontal-a-visible : Rectangle {
+        width: 14px;
+        height: 14px;
+
+        x: image_to_view_x(horizontal-a-x) * 1px
+            - self.width / 2;
+
+        y: image_to_view_y(horizontal-a-y) * 1px
+            - self.height / 2;
+
+        background: #00aaff;
+        border-radius: self.width / 2;
+
+        border-width: 2px;
+        border-color: white;
+    }
+
+    // ═════════════════════════════════════════════
+    // Point horizontal B
+    // ═════════════════════════════════════════════
+
+    if calibration-visible && horizontal-b-visible: Rectangle {
+        width: 14px;
+        height: 14px;
+
+        x: image_to_view_x(horizontal-b-x) * 1px
+            - self.width / 2;
+
+        y: image_to_view_y(horizontal-b-y) * 1px
+            - self.height / 2;
+
+        background: #00aaff;
+        border-radius: self.width / 2;
+
+        border-width: 2px;
+        border-color: white;
+    }
+
+    // ═════════════════════════════════════════════
+    // Ligne horizontale
+    // ═════════════════════════════════════════════
+
+    if calibration-visible
+        && horizontal-a-x >= 0
+        && horizontal-b-x >= 0: Rectangle {
+
+        height: 2px;
+
+        x: image_to_view_x(
+            min(horizontal-a-x, horizontal-b-x)
+        ) * 1px;
+
+        y: image_to_view_y(
+            (horizontal-a-y + horizontal-b-y) / 2
+        ) * 1px - self.height / 2;
+
+        width: abs(
+            image_to_view_x(horizontal-b-x)
+            - image_to_view_x(horizontal-a-x)
+        ) * 1px;
+
+        background: #00aaff;
+    }
+
+    // ═════════════════════════════════════════════
+    // Point vertical A
+    // ═════════════════════════════════════════════
+
+    if calibration-visible && vertical-a-visible: Rectangle {
+        width: 14px;
+        height: 14px;
+
+        x: image_to_view_x(vertical-a-x) * 1px
+            - self.width / 2;
+
+        y: image_to_view_y(vertical-a-y) * 1px
+            - self.height / 2;
+
+        background: #00ff88;
+        border-radius: self.width / 2;
+
+        border-width: 2px;
+        border-color: white;
+    }
+
+    // ═════════════════════════════════════════════
+    // Point vertical B
+    // ═════════════════════════════════════════════
+
+    if calibration-visible && vertical-b-visible: Rectangle {
+        width: 14px;
+        height: 14px;
+
+        x: image_to_view_x(vertical-b-x) * 1px
+            - self.width / 2;
+
+        y: image_to_view_y(vertical-b-y) * 1px
+            - self.height / 2;
+
+        background: #00ff88;
+        border-radius: self.width / 2;
+
+        border-width: 2px;
+        border-color: white;
+    }
+
+    // ═════════════════════════════════════════════
+    // Ligne verticale
+    // ═════════════════════════════════════════════
+
+    if calibration-visible
+        && vertical-a-y >= 0
+        && vertical-b-y >= 0: Rectangle {
+
+        width: 2px;
+
+        x: image_to_view_x(
+            (vertical-a-x + vertical-b-x) / 2
+        ) * 1px - self.width / 2;
+
+        y: image_to_view_y(
+            min(vertical-a-y, vertical-b-y)
+        ) * 1px;
+
+        height: abs(
+            image_to_view_y(vertical-b-y)
+            - image_to_view_y(vertical-a-y)
+        ) * 1px;
+
+        background: #00ff88;
+    }
+    for impact in impacts : Rectangle {
+        width: 10px;
+        height: 10px;
+
+        x: image_to_view_x(impact.image-x) * 1px
+            - self.width / 2;
+
+        y: image_to_view_y(impact.image-y) * 1px
+            - self.height / 2;
+
+        background: #ff3030;
+        border-radius: self.width / 2;
+
+        border-width: 1px;
+        border-color: white;
+    }
+
+    // ═════════════════════════════════════════════
+    // Zone interactive
+    // ═════════════════════════════════════════════
+
+    TouchArea {
+        width: parent.width;
+        height: parent.height;
+
+        clicked => {
+            let x = root.view_to_image_x(
+                self.mouse-x / 1px
+            );
+
+            let y = root.view_to_image_y(
+                self.mouse-y / 1px
+            );
+
+            if x >= 0
+                && x < root.image-width
+                && y >= 0
+                && y < root.image-height
+            {
+                root.image-clicked(x, y);
+            }
+        }
+    }
+
+    // ═════════════════════════════════════════════
+    // Géométrie
+    // ═════════════════════════════════════════════
+
+    function image_scale() -> float {
+        return min(
+            (self.width / 1px) / image-width,
+            (self.height / 1px) / image-height
+        );
+    }
+
+    function rendered_width() -> float {
+        return image-width * image_scale();
+    }
+
+    function rendered_height() -> float {
+        return image-height * image_scale();
+    }
+
+    function image_offset_x() -> float {
+        return (
+            (self.width / 1px)
+            - rendered_width()
+        ) / 2;
+    }
+
+    function image_offset_y() -> float {
+        return (
+            (self.height / 1px)
+            - rendered_height()
+        ) / 2;
+    }
+
+    function image_to_view_x(
+        x: float
+    ) -> float {
+        return image_offset_x()
+            + x * image_scale();
+    }
+
+    function image_to_view_y(
+        y: float
+    ) -> float {
+        return image_offset_y()
+            + y * image_scale();
+    }
+
+    function view_to_image_x(
+        x: float
+    ) -> float {
+        return (
+            x - image_offset_x()
+        ) / image_scale();
+    }
+
+    function view_to_image_y(
+        y: float
+    ) -> float {
+        return (
+            y - image_offset_y()
+        ) / image_scale();
+    }
+}
