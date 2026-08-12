@@ -85,10 +85,12 @@ impl CalibrationSession {
     pub fn step(&self) -> CalibrationStep {
         self.step
     }
+    #[cfg_attr(not(test), allow(dead_code))]
     pub fn is_calibrated(&self) -> bool {
         self.calibration.is_some()
     }
 
+    #[cfg_attr(not(test), allow(dead_code))]
     pub fn pixel_to_mm(&self, point: Point) -> Option<Point> {
         self.calibration
             .as_ref()

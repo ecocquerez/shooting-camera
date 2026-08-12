@@ -16,6 +16,7 @@ pub struct Impact {
 
 impl Impact {
     /// Crée un impact à partir de sa position dans l'image.
+    #[cfg_attr(not(test), allow(dead_code))]
     pub fn new(number: u32, position_image: Point) -> Self {
         Self {
             number,
@@ -41,6 +42,7 @@ impl Impact {
     }
 
     /// Retourne la position calibrée si elle existe.
+    #[cfg_attr(not(test), allow(dead_code))]
     pub fn target_position(&self) -> Option<Point> {
         self.position_cible
     }

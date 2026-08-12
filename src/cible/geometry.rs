@@ -22,6 +22,7 @@ pub fn calculate_center(points: &[Point]) -> Option<Point> {
 /// et leur centre.
 ///
 /// Le résultat est exprimé dans l'unité des points.
+#[cfg_attr(not(test), allow(dead_code))]
 pub fn calculate_max_distance(points: &[Point], center: Point) -> Option<f32> {
     if points.is_empty() {
         return None;
@@ -37,6 +38,7 @@ pub fn calculate_max_distance(points: &[Point], center: Point) -> Option<f32> {
 
 /// Calcule la distance moyenne entre une série de points
 /// et leur centre.
+#[cfg_attr(not(test), allow(dead_code))]
 pub fn calculate_average_distance(points: &[Point], center: Point) -> Option<f32> {
     if points.is_empty() {
         return None;

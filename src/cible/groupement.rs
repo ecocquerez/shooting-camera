@@ -25,11 +25,6 @@ impl Groupement {
         })
     }
 
-    /// Retourne les impacts du groupement.
-    pub fn impacts(&self) -> &[Impact] {
-        &self.impacts
-    }
-
     /// Retourne le centre géométrique du groupement.
     pub fn center(&self) -> Point {
         self.center
@@ -44,6 +39,7 @@ impl Groupement {
     }
 
     /// Distance entre un impact et le centre du groupement.
+    #[cfg_attr(not(test), allow(dead_code))]
     pub fn distance_from_center(&self, impact: &Impact) -> Option<f32> {
         let position = impact.position_cible?;
 
@@ -54,6 +50,7 @@ impl Groupement {
     /// du groupement.
     ///
     /// C'est le rayon maximal du groupement.
+    #[cfg_attr(not(test), allow(dead_code))]
     pub fn max_distance(&self) -> f32 {
         self.impacts
             .iter()
@@ -83,6 +80,7 @@ impl Groupement {
     }
 
     /// Distance moyenne des impacts au centre du groupement.
+    #[cfg_attr(not(test), allow(dead_code))]
     pub fn average_distance(&self) -> f32 {
         let distances: Vec<f32> = self
             .impacts
@@ -100,6 +98,7 @@ impl Groupement {
     /// Écart du centre du groupement par rapport au point visé.
     ///
     /// Dans notre modèle, le point visé est l'origine `(0, 0)`.
+    #[cfg_attr(not(test), allow(dead_code))]
     pub fn offset_from_aim(&self) -> Point {
         self.center
     }

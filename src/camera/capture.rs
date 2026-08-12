@@ -19,32 +19,16 @@ pub enum CameraCommand {
     Start,
     Stop,
 }
-use std::time::Instant;
-
 struct FpsCounter {
-    start: Instant,
     frames: u64,
 }
 impl FpsCounter {
     fn new() -> Self {
-        Self {
-            start: Instant::now(),
-            frames: 0,
-        }
+        Self { frames: 0 }
     }
 
     fn tick(&mut self) {
         self.frames += 1;
-    }
-
-    fn fps(&self) -> f64 {
-        let elapsed = self.start.elapsed().as_secs_f64();
-
-        if elapsed == 0.0 {
-            0.0
-        } else {
-            self.frames as f64 / elapsed
-        }
     }
 }
 

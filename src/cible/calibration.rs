@@ -85,14 +85,12 @@ impl Calibration {
         )
     }
 
-    pub fn center(&self) -> Point {
-        self.center
-    }
-
+    #[cfg_attr(not(test), allow(dead_code))]
     pub fn pixels_per_mm_x(&self) -> f32 {
         self.pixels_per_mm_x
     }
 
+    #[cfg_attr(not(test), allow(dead_code))]
     pub fn pixels_per_mm_y(&self) -> f32 {
         self.pixels_per_mm_y
     }
@@ -120,17 +118,20 @@ impl Calibration {
     }
 
     /// Distance horizontale en pixels → mm.
+    #[cfg_attr(not(test), allow(dead_code))]
     pub fn pixel_distance_x_to_mm(&self, distance: f32) -> f32 {
         distance / self.pixels_per_mm_x
     }
 
     /// Distance verticale en pixels → mm.
+    #[cfg_attr(not(test), allow(dead_code))]
     pub fn pixel_distance_y_to_mm(&self, distance: f32) -> f32 {
         distance / self.pixels_per_mm_y
     }
 
     /// Calcule directement la distance d'un point image
     /// au centre de la cible.
+    #[cfg_attr(not(test), allow(dead_code))]
     pub fn distance_to_center(&self, point: Point) -> f32 {
         let relative = self.pixel_to_mm(point);
 

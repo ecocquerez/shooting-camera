@@ -7,7 +7,9 @@ use nokhwa::{
 pub struct CameraDevice {
     pub index: CameraIndex,
     pub name: String,
+    #[allow(dead_code)]
     pub description: String,
+    #[allow(dead_code)]
     pub misc: String,
 }
 
