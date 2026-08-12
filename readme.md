@@ -1,57 +1,57 @@
 # Shooting Camera
 
-`shooting-camera` is a desktop application written in Rust and Slint for analyzing shot impacts on a target from a USB camera feed.
+`shooting-camera` est une application de bureau écrite en Rust et Slint permettant d’analyser des impacts de tir sur une cible à partir d’un flux vidéo provenant d’une caméra USB.
 
-The application displays a live camera image, lets you calibrate the target manually, place and edit shot impacts, and compute shooting metrics such as:
+L’application affiche l’image en direct de la caméra, permet de calibrer manuellement la cible, d’ajouter et de modifier les impacts, et de calculer plusieurs métriques de tir, notamment :
 
-- group size / dispersion
-- offset from point of aim
-- average point of impact (MPI)
-- angular values in **mrad** and **MOA**
+- la taille du groupement / dispersion
+- l’écart par rapport au point visé
+- le point moyen d’impact (MPI)
+- les valeurs angulaires en **mrad** et en **MOA**
 
-## Features
+## Fonctionnalités
 
-### Camera
-- Detects available cameras through `nokhwa`
-- Lets you select the active camera from the UI
-- Streams the live video feed into the Slint interface
+### Caméra
+- Détection des caméras disponibles via `nokhwa`
+- Sélection de la caméra active depuis l’interface
+- Affichage du flux vidéo en direct dans l’interface Slint
 
 ### Calibration
-- Manual target calibration from the live image
-- Click-based workflow for:
-  - target center
-  - horizontal reference
-  - vertical reference
-- Separate horizontal and vertical calibration distances
-- Visual calibration overlay and point labels
+- Calibration manuelle de la cible à partir de l’image en direct
+- Procédure par clics pour définir :
+  - le centre de la cible
+  - les repères horizontaux
+  - les repères verticaux
+- Distances de calibration horizontale et verticale distinctes
+- Superposition visuelle de calibration avec étiquettes des points
 
 ### Impacts
-- Add impacts by clicking directly on the image
-- Select impacts either:
-  - on the target image
-  - in the impacts list
-- Move a selected impact
-- Delete a selected impact
-- Clear all impacts
-- Automatic renumbering after deletion
+- Ajout des impacts par clic direct sur l’image
+- Sélection d’un impact :
+  - sur l’image de la cible
+  - dans la liste des impacts
+- Déplacement d’un impact sélectionné
+- Suppression d’un impact sélectionné
+- Effacement de tous les impacts
+- Renumérotation automatique après suppression
 
-### Metrics
-- **Average point of impact (MPI)** shown as a **blue marker**
-- **Groupement center** computed from the **smallest enclosing circle center**
-- Dispersion / group size
-- Offset from point of aim
-- Values displayed in:
+### Mesures
+- **Point moyen d’impact (MPI)** affiché par un **marqueur bleu**
+- **Centre du groupement** calculé à partir du **centre du plus petit cercle englobant**
+- Dispersion / taille du groupement
+- Écart par rapport au point visé
+- Valeurs affichées en :
   - **mrad**
   - **MOA**
 
-## Tech stack
+## Pile technique
 
 - **Rust**
-- **Slint** for the GUI
-- **Nokhwa** for camera access
-- **image** for frame/image handling
+- **Slint** pour l’interface graphique
+- **Nokhwa** pour l’accès à la caméra
+- **image** pour la gestion des images et des frames
 
-## Project structure
+## Structure du projet
 
 ```text
 shooting-camera/
@@ -81,99 +81,99 @@ shooting-camera/
     └── main.rs
 ```
 
-## Requirements
+## Prérequis
 
-- Rust toolchain
-- A supported USB camera
-- A desktop environment capable of running Slint
+- Une toolchain Rust installée
+- Une caméra USB compatible
+- Un environnement de bureau capable d’exécuter une application Slint
 
-## Build
+## Compilation
 
 ```bash
 cargo build
 ```
 
-## Run
+## Exécution
 
 ```bash
 cargo run
 ```
 
-## Test
+## Tests
 
 ```bash
 cargo test
 ```
 
-At the time of writing, the project test suite passes.
+Au moment de la rédaction, la suite de tests du projet passe correctement.
 
-## How to use
+## Utilisation
 
-### 1. Select a camera
-- Expand the `Caméras` section
-- Choose the desired device
-- The section auto-collapses after selection
+### 1. Sélectionner une caméra
+- Déplier la section `Caméras`
+- Choisir le périphérique souhaité
+- La section se replie automatiquement après la sélection
 
-### 2. Configure shooting and calibration
-- Expand `Configuration de tir`
-- Set the shooting distance
-- Enter calibration distances:
-  - horizontal reference distance
-  - vertical reference distance
+### 2. Configurer le tir et la calibration
+- Déplier `Configuration de tir`
+- Définir la distance de tir
+- Saisir les distances de calibration :
+  - distance de référence horizontale
+  - distance de référence verticale
 
-### 3. Calibrate the target
-Click `Calibrer la cible`, then click the image in this order:
-1. target center
-2. first horizontal reference point
-3. second horizontal reference point
-4. first vertical reference point
-5. second vertical reference point
+### 3. Calibrer la cible
+Cliquer sur `Calibrer la cible`, puis cliquer sur l’image dans cet ordre :
+1. centre de la cible
+2. premier point de référence horizontal
+3. second point de référence horizontal
+4. premier point de référence vertical
+5. second point de référence vertical
 
-### 4. Capture the calibrated target view
-- Click `Capturer la cible`
-- The calibration popup disappears, but the calibration remains active
+### 4. Capturer la vue calibrée
+- Cliquer sur `Capturer la cible`
+- La fenêtre verte de fin de calibration disparaît, mais la calibration reste active
 
-### 5. Add impacts
-- Click on the image to place each impact
-- The application stores image coordinates and calibrated target coordinates
+### 5. Ajouter des impacts
+- Cliquer sur l’image pour placer chaque impact
+- L’application enregistre les coordonnées image et les coordonnées calibrées sur la cible
 
-### 6. Edit impacts
-- Select an impact from the image or list
-- Use:
-  - `Déplacer` to reposition it
-  - `Supprimer` to delete it
-- All metrics are recalculated automatically
+### 6. Modifier les impacts
+- Sélectionner un impact depuis l’image ou la liste
+- Utiliser :
+  - `Déplacer` pour le repositionner
+  - `Supprimer` pour le retirer
+- Toutes les mesures sont recalculées automatiquement
 
-## Current metric definitions
+## Définitions actuelles des mesures
 
-### Average point of impact (MPI)
-The MPI is the arithmetic mean of all calibrated impacts.
+### Point moyen d’impact (MPI)
+Le MPI correspond à la moyenne arithmétique de tous les impacts calibrés.
 
-### Groupement center
-The groupement center is defined as the **center of the smallest enclosing circle**.
+### Centre du groupement
+Le centre du groupement est défini comme le **centre du plus petit cercle englobant**.
 
 ### Dispersion
-The group diameter is computed as the **maximum distance between two impacts**.
+Le diamètre du groupement est calculé comme la **distance maximale entre deux impacts**.
 
-## Current limitations
+## Limitations actuelles
 
-This project is still a prototype / measurement tool and has some important limitations:
+Ce projet reste un prototype / outil de mesure et présente encore plusieurs limitations importantes :
 
-- Calibration is manual
-- No automatic impact detection
-- No session persistence
-- No perspective correction / homography yet
-- No target/image export workflow yet
-- The impacts list is compact but not yet a fully scrollable advanced list widget
+- La calibration est manuelle
+- Il n’y a pas de détection automatique des impacts
+- Il n’y a pas de persistance des sessions
+- Il n’y a pas encore de correction de perspective / homographie
+- Il n’y a pas encore de fonction d’export de cible ou d’image
+- La liste des impacts est compacte mais ne constitue pas encore un widget avancé totalement défilable
 
 ## Notes
 
-- Impact calculations require a valid calibration
-- Some internal code warnings may still exist for currently unused helper functions or exports
-- The README describes the current implemented behavior, not the earlier design notes originally stored in this file
+- Les calculs d’impacts nécessitent une calibration valide
+- Certains avertissements internes peuvent encore exister pour des fonctions auxiliaires ou des exports actuellement non utilisés
+- Ce README décrit le comportement actuellement implémenté, et non les anciennes notes de conception initialement présentes dans ce fichier
 
-## License
+## Licence
 
-This project is licensed under the **GNU General Public License v3.0 (GPLv3)**.
+Ce projet est distribué sous licence **GNU General Public License v3.0 (GPLv3)**.
 
-See the [`LICENSE`](LICENSE) file for the full license text.
+Voir le fichier [`LICENSE`](LICENSE) pour le texte complet de la licence.
