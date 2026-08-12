@@ -6,13 +6,16 @@ build = "build.rs"
 
 [dependencies]
 image = "0.25.10"
-nokhwa = {
-    version ="0.10.11",
-    features = [
-            "input-native"
-        ]
-}
-slint = "1.17.1"
+slint = { version = "1.17.1", default-features = false, features = ["std", "backend-winit", "renderer-software", "compat-1-2"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+nokhwa = { version = "0.10.11", features = ["input-v4l"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+nokhwa = { version = "0.10.11", features = ["input-msmf"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+nokhwa = { version = "0.10.11", features = ["input-avfoundation"] }
 
 [build-dependencies]
 slint-build = "1.17.1"

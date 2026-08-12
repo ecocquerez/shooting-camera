@@ -87,6 +87,45 @@ shooting-camera/
 - Une caméra USB compatible
 - Un environnement de bureau capable d’exécuter une application Slint
 
+### Dépendances système Linux
+
+Le projet utilise désormais une configuration plus ciblée selon la plateforme :
+
+- sous **Linux** : `nokhwa` avec `input-v4l`
+- sous **Windows** : `nokhwa` avec `input-msmf`
+- sous **macOS** : `nokhwa` avec `input-avfoundation`
+- `slint` avec `backend-winit` et `renderer-software`
+
+Cela évite de tirer inutilement plusieurs backends caméra selon l’OS, tout en conservant une configuration graphique plus légère que celle par défaut.
+
+Sous Linux, quelques bibliothèques système restent néanmoins nécessaires.
+
+#### Debian / Ubuntu
+
+```bash
+sudo apt install libclang-dev clang libx11-dev libwayland-dev libxkbcommon-dev libgl1-mesa-dev
+```
+
+#### Fedora
+
+```bash
+sudo dnf install clang-devel clang libX11-devel wayland-devel libxkbcommon-devel mesa-libGL-devel
+```
+
+#### Arch Linux
+
+```bash
+sudo pacman -S clang libx11 wayland libxkbcommon mesa
+```
+
+Notes :
+
+- `libclang` est requis par `nokhwa`/`v4l2` au moment de la compilation.
+- La configuration cible maintenant explicitement un backend caméra par système d’exploitation.
+- La dépendance Linux `fontconfig` n’est plus le blocage principal dans la configuration actuelle du projet.
+- La compilation a été validée avec succès sur Linux avec cette configuration.
+- Selon la distribution et la configuration graphique, d’autres paquets d’exécution peuvent encore être nécessaires.
+
 ## Compilation
 
 ```bash

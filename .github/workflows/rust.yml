@@ -11,12 +11,30 @@ env:
 
 jobs:
   build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
 
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Install Linux system dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          clang \
+          libclang-dev \
+          libx11-dev \
+          libwayland-dev \
+          libxkbcommon-dev \
+          libgl1-mesa-dev
+
     - name: Build
       run: cargo build --verbose
+
     - name: Run tests
       run: cargo test --verbose
