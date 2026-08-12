@@ -130,7 +130,7 @@ Click `Calibrer la cible`, then click the image in this order:
 5. second vertical reference point
 
 ### 4. Capture the calibrated target view
-- Click `Capturer`
+- Click `Capturer la cible`
 - The calibration popup disappears, but the calibration remains active
 
 ### 5. Add impacts
@@ -176,4 +176,4 @@ This project is still a prototype / measurement tool and has some important limi
 
 This project is licensed under the **GNU General Public License v3.0 (GPLv3)**.
 
-If you want to distribute this project, you should also add a `LICENSE` file containing the full GPLv3 text.
+See the [`LICENSE`](LICENSE) file for the full license text.
