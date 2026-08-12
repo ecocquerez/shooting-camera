@@ -1,6 +1,8 @@
 import { ImpactViewData } from "types.slint";
 
 export component TargetView inherits Rectangle {
+    min-width: 400px;
+    min-height: 300px;
     // ─────────────────────────────────────────────
     // Image caméra
     // ─────────────────────────────────────────────
@@ -26,6 +28,10 @@ export component TargetView inherits Rectangle {
     // ─────────────────────────────────────────────
 
     in property <bool> calibration-visible: false;
+    in property <bool> calibration-complete: false;
+    in property <string> calibration-step: "Aucune";
+    in property <string> calibration-active-point: "";
+    in property <string> calibration-instruction: "";
 
     in property <float> horizontal-a-x: 0;
     in property <float> horizontal-a-y: 0;
@@ -55,7 +61,7 @@ export component TargetView inherits Rectangle {
     // ─────────────────────────────────────────────
 
     callback image-clicked(float, float);
-
+    callback impact-selected(int);
     background: #181818;
 
     // ═════════════════════════════════════════════
@@ -93,6 +99,48 @@ export component TargetView inherits Rectangle {
 
         border-width: 2px;
         border-color: white;
+
+        Text {
+            text: calibration-active-point == "C" ? "C ←" : "C";
+            color: calibration-active-point == "C" ? #ffd000 : white;
+            x: 18px;
+            y: -12px;
+            font-size: calibration-active-point == "C" ? 15px : 13px;
+            font-weight: 700;
+        }
+    }
+
+
+    if calibration-visible : Rectangle {
+        x: image_offset_x() * 1px + 12px;
+        y: image_offset_y() * 1px + 12px;
+        width: min(rendered_width() * 1px - 24px, 380px);
+        height: 64px;
+
+        background: calibration-complete ? #204020cc : #102030cc;
+        border-radius: 8px;
+        border-width: 1px;
+        border-color: calibration-complete ? #80ffb0 : #80cfff;
+
+        VerticalLayout {
+            padding: 10px;
+            spacing: 4px;
+
+            Text {
+                text: calibration-active-point == ""
+                    ? "Calibration · " + calibration-step
+                    : "Calibration · " + calibration-step + " · " + calibration-active-point;
+                color: white;
+                font-size: 16px;
+                font-weight: 700;
+            }
+
+            Text {
+                text: calibration-instruction;
+                color: calibration-complete ? #80ffb0 : #cfe8ff;
+                wrap: word-wrap;
+            }
+        }
     }
 
     // ═════════════════════════════════════════════
@@ -114,6 +162,15 @@ export component TargetView inherits Rectangle {
 
         border-width: 2px;
         border-color: white;
+
+        Text {
+            text: calibration-active-point == "H1" ? "H1 ←" : "H1";
+            color: calibration-active-point == "H1" ? #ffd000 : white;
+            x: 16px;
+            y: -10px;
+            font-size: calibration-active-point == "H1" ? 15px : 13px;
+            font-weight: 700;
+        }
     }
 
     // ═════════════════════════════════════════════
@@ -135,6 +192,15 @@ export component TargetView inherits Rectangle {
 
         border-width: 2px;
         border-color: white;
+
+        Text {
+            text: calibration-active-point == "H2" ? "H2 ←" : "H2";
+            color: calibration-active-point == "H2" ? #ffd000 : white;
+            x: 16px;
+            y: -10px;
+            font-size: calibration-active-point == "H2" ? 15px : 13px;
+            font-weight: 700;
+        }
     }
 
     // ═════════════════════════════════════════════
@@ -182,6 +248,15 @@ export component TargetView inherits Rectangle {
 
         border-width: 2px;
         border-color: white;
+
+        Text {
+            text: calibration-active-point == "V1" ? "V1 ←" : "V1";
+            color: calibration-active-point == "V1" ? #ffd000 : white;
+            x: 16px;
+            y: -10px;
+            font-size: calibration-active-point == "V1" ? 15px : 13px;
+            font-weight: 700;
+        }
     }
 
     // ═════════════════════════════════════════════
@@ -203,6 +278,15 @@ export component TargetView inherits Rectangle {
 
         border-width: 2px;
         border-color: white;
+
+        Text {
+            text: calibration-active-point == "V2" ? "V2 ←" : "V2";
+            color: calibration-active-point == "V2" ? #ffd000 : white;
+            x: 16px;
+            y: -10px;
+            font-size: calibration-active-point == "V2" ? 15px : 13px;
+            font-weight: 700;
+        }
     }
 
     // ═════════════════════════════════════════════
@@ -230,23 +314,6 @@ export component TargetView inherits Rectangle {
 
         background: #00ff88;
     }
-    for impact in impacts : Rectangle {
-        width: 10px;
-        height: 10px;
-
-        x: image_to_view_x(impact.image-x) * 1px
-            - self.width / 2;
-
-        y: image_to_view_y(impact.image-y) * 1px
-            - self.height / 2;
-
-        background: #ff3030;
-        border-radius: self.width / 2;
-
-        border-width: 1px;
-        border-color: white;
-    }
-
     // ═════════════════════════════════════════════
     // Zone interactive
     // ═════════════════════════════════════════════
@@ -273,7 +340,42 @@ export component TargetView inherits Rectangle {
             }
         }
     }
+    for impact[index] in impacts : Rectangle {
+        width: index == root.selected-impact ? 20px : 12px;
+        height: index == root.selected-impact ? 20px : 12px;
 
+        x: image_to_view_x(impact.image-x) * 1px
+            - self.width / 2;
+
+        y: image_to_view_y(impact.image-y) * 1px
+            - self.height / 2;
+
+        background: index == root.selected-impact
+            ? #ffd000
+            : #ff3030;
+
+        border-radius: self.width / 2;
+
+        border-width: index == root.selected-impact ? 3px : 2px;
+        border-color: white;
+
+        TouchArea {
+            clicked => {
+                root.impact-selected(index);
+            }
+        }
+
+        if index == root.selected-impact : Text {
+            text: "● " + impact.number;
+            color: white;
+
+            x: 22px;
+            y: -10px;
+
+            font-size: 14px;
+            font-weight: 700;
+        }
+    }
     // ═════════════════════════════════════════════
     // Géométrie
     // ═════════════════════════════════════════════
