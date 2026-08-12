@@ -29,6 +29,7 @@ export component MainWindow inherits Window {
     in property <[CameraDeviceViewData]> camera-devices: [];
     in property <int> selected-camera: -1;
     in property <int> selected-impact: -1;
+    in property <bool> moving-impact: false;
     // ─────────────────────────────────────────────
     // Configuration cible
     // ─────────────────────────────────────────────
@@ -45,11 +46,10 @@ export component MainWindow inherits Window {
     in property <string> grouping-diameter: "--";
     in property <string> grouping-center: "--";
     in property <string> grouping-offset: "--";
-    in property <float> grouping-center-x: 0;
-    in property <float> grouping-center-y: 0;
-    in property <bool> grouping-center-visible: false;
-    in property <float> grouping-center-image-x: 360;
-    in property <float> grouping-center-image-y: 240;
+    in property <string> average-impact-offset: "--";
+    in property <bool> average-impact-visible: false;
+    in property <float> average-impact-image-x: 360;
+    in property <float> average-impact-image-y: 240;
 
     in property <float> center_x: 360.0;
     in property <float> center_y: 240.0;
@@ -95,6 +95,8 @@ export component MainWindow inherits Window {
     callback set_center(float, float);
     callback add_impact(float, float);
     callback clear_impacts();
+    callback delete-selected-impact();
+    callback move-selected-impact();
     callback target_clicked(float, float);
     callback request-set-center();
     callback request-calibration();
@@ -168,6 +170,9 @@ export component MainWindow inherits Window {
 
                 center-visible: true;
                 setting-center: setting-center;
+                average-impact-visible: average-impact-visible;
+                average-impact-image-x: average-impact-image-x;
+                average-impact-image-y: average-impact-image-y;
                 impacts: impacts;
 
                 // ─────────────────────────────────────────
@@ -502,27 +507,61 @@ export component MainWindow inherits Window {
                         border-radius: 8px;
 
                         VerticalBox {
-                            padding: 12px;
-                            spacing: 8px;
+                            padding: 6px;
+                            spacing: 4px;
 
-                            Text {
-                                text: "Impacts";
-                                font-size: 18px;
-                            }
+                            HorizontalBox {
+                                spacing: 6px;
 
-                            Button {
-                                text: "Capturer la cible";
+                                Text {
+                                    text: "Impacts";
+                                    font-size: 16px;
+                                    vertical-alignment: center;
+                                }
 
-                                clicked => {
-                                    capture_target();
+                                Rectangle {
+                                    horizontal-stretch: 1;
+                                    background: transparent;
+                                }
+
+                                Button {
+                                    text: "Capturer";
+                                    width: 90px;
+
+                                    clicked => {
+                                        capture_target();
+                                    }
+                                }
+
+                                Button {
+                                    text: "Effacer";
+                                    width: 80px;
+
+                                    clicked => {
+                                        clear_impacts();
+                                    }
                                 }
                             }
 
-                            Button {
-                                text: "Effacer les impacts";
+                            if root.selected-impact > 0 : HorizontalBox {
+                                spacing: 6px;
 
-                                clicked => {
-                                    clear_impacts();
+                                Button {
+                                    text: moving-impact ? "Cliquez pour placer" : "Déplacer";
+                                    width: 120px;
+
+                                    clicked => {
+                                        move-selected-impact();
+                                    }
+                                }
+
+                                Button {
+                                    text: "Supprimer";
+                                    width: 100px;
+
+                                    clicked => {
+                                        delete-selected-impact();
+                                    }
                                 }
                             }
 
@@ -585,8 +624,12 @@ export component MainWindow inherits Window {
                             }
 
                             Text {
-                                text: "Décalage : " + grouping-offset;
+                                text: "Décalage cercle : " + grouping-offset;
                                 font-size: 18px;
+                            }
+
+                            Text {
+                                text: "Point moyen d'impact : " + average-impact-offset;
                             }
 
                             Text {

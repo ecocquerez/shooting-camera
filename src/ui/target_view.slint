@@ -22,6 +22,9 @@ export component TargetView inherits Rectangle {
 
     in property <bool> center-visible: true;
     in property <bool> setting-center: false;
+    in property <bool> average-impact-visible: false;
+    in property <float> average-impact-image-x: 360;
+    in property <float> average-impact-image-y: 240;
 
     // ─────────────────────────────────────────────
     // Calibration
@@ -110,6 +113,30 @@ export component TargetView inherits Rectangle {
         }
     }
 
+    if average-impact-visible : Rectangle {
+        width: 14px;
+        height: 14px;
+
+        x: image_to_view_x(average-impact-image-x) * 1px
+            - self.width / 2;
+
+        y: image_to_view_y(average-impact-image-y) * 1px
+            - self.height / 2;
+
+        background: #2da7ff;
+        border-radius: self.width / 2;
+        border-width: 2px;
+        border-color: white;
+
+        Text {
+            text: "MPI";
+            color: #2da7ff;
+            x: 16px;
+            y: -10px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+    }
 
     if calibration-visible : Rectangle {
         x: image_offset_x() * 1px + 12px;

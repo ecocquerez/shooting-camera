@@ -5,6 +5,7 @@ mod model;
 slint::include_modules!();
 
 use crate::cible::calibration_session::{CalibrationSession, CalibrationStep};
+use crate::cible::geometry::calculate_center;
 use crate::cible::groupement::calculate_groupement;
 use crate::model::{Impact, Point};
 
@@ -108,6 +109,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let calibration = Rc::new(RefCell::new(CalibrationSession::new()));
     let impacts = Rc::new(RefCell::new(Vec::<Impact>::new()));
     let selected_impact = Rc::new(RefCell::new(None::<usize>));
+    let moving_impact = Rc::new(RefCell::new(false));
 
     let devices_for_refresh = devices.clone();
     let capture_for_refresh = capture.clone();
@@ -229,13 +231,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let ui_weak = ui.as_weak();
 
         move |index| {
-            let index = index as usize;
-            *selected_impact.borrow_mut() = Some(index);
+            let selected_index = if index > 0 {
+                (index - 1) as usize
+            } else {
+                index as usize
+            };
 
-            println!("Impact sélectionné : #{}", index);
+            *selected_impact.borrow_mut() = Some(selected_index);
+
+            println!("Impact sélectionné : #{}", selected_index + 1);
 
             if let Some(ui) = ui_weak.upgrade() {
-                ui.set_selected_impact(index as i32);
+                ui.set_selected_impact((selected_index + 1) as i32);
             }
         }
     });
@@ -243,16 +250,89 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ui.on_clear_impacts({
         let impacts = impacts.clone();
         let selected_impact = selected_impact.clone();
+        let moving_impact = moving_impact.clone();
         let ui_weak = ui.as_weak();
 
         move || {
             impacts.borrow_mut().clear();
             *selected_impact.borrow_mut() = None;
+            *moving_impact.borrow_mut() = false;
 
             if let Some(ui) = ui_weak.upgrade() {
                 ui.set_selected_impact(-1);
+                ui.set_moving_impact(false);
                 update_impacts_ui(&ui, &[]);
                 clear_groupement_ui(&ui);
+            }
+        }
+    });
+
+    ui.on_move_selected_impact({
+        let moving_impact = moving_impact.clone();
+        let selected_impact = selected_impact.clone();
+        let ui_weak = ui.as_weak();
+
+        move || {
+            if selected_impact.borrow().is_none() {
+                return;
+            }
+
+            let new_state = !*moving_impact.borrow();
+            *moving_impact.borrow_mut() = new_state;
+
+            if let Some(ui) = ui_weak.upgrade() {
+                ui.set_moving_impact(new_state);
+            }
+        }
+    });
+
+    ui.on_delete_selected_impact({
+        let impacts = impacts.clone();
+        let selected_impact = selected_impact.clone();
+        let moving_impact = moving_impact.clone();
+        let calibration = calibration.clone();
+        let ui_weak = ui.as_weak();
+
+        move || {
+            let Some(selected_index) = *selected_impact.borrow() else {
+                return;
+            };
+
+            let mut impacts = impacts.borrow_mut();
+
+            if selected_index >= impacts.len() {
+                return;
+            }
+
+            impacts.remove(selected_index);
+
+            for (index, impact) in impacts.iter_mut().enumerate() {
+                impact.number = index as u32 + 1;
+            }
+
+            let new_selection = if impacts.is_empty() {
+                None
+            } else if selected_index >= impacts.len() {
+                Some(impacts.len() - 1)
+            } else {
+                Some(selected_index)
+            };
+
+            *selected_impact.borrow_mut() = new_selection;
+            *moving_impact.borrow_mut() = false;
+
+            if let Some(ui) = ui_weak.upgrade() {
+                ui.set_moving_impact(false);
+                ui.set_selected_impact(new_selection.map(|index| (index + 1) as i32).unwrap_or(-1));
+                update_impacts_ui(&ui, &impacts);
+
+                let session = calibration.borrow();
+                if let Some(calibration) = session.calibration() {
+                    let target_distance = ui.get_target_distance();
+                    update_groupement_ui(&ui, &impacts, target_distance, calibration);
+                } else {
+                    clear_groupement_ui(&ui);
+                }
             }
         }
     });
@@ -283,6 +363,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ui.on_target_clicked({
         let calibration = calibration.clone();
         let impacts = impacts.clone();
+        let selected_impact = selected_impact.clone();
+        let moving_impact = moving_impact.clone();
         let ui_weak = ui.as_weak();
 
         move |x, y| {
@@ -316,6 +398,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let target_position = calibration.pixel_to_mm(point);
             let mut impacts = impacts.borrow_mut();
+
+            if *moving_impact.borrow() {
+                let Some(selected_index) = *selected_impact.borrow() else {
+                    return;
+                };
+
+                if let Some(impact) = impacts.get_mut(selected_index) {
+                    impact.position_image = point;
+                    impact.set_target_position(target_position);
+
+                    println!(
+                        "Impact #{} déplacé : image=({:.1}, {:.1}) -> cible=({:.2}, {:.2}) mm",
+                        impact.number, x, y, target_position.x, target_position.y
+                    );
+                }
+
+                *moving_impact.borrow_mut() = false;
+
+                if let Some(ui) = ui_weak.upgrade() {
+                    ui.set_moving_impact(false);
+                    update_impacts_ui(&ui, &impacts);
+                    let target_distance = ui.get_target_distance();
+                    update_groupement_ui(&ui, &impacts, target_distance, calibration);
+                }
+
+                return;
+            }
+
             let number = impacts.len() as u32 + 1;
             let impact = Impact::with_target_position(number, point, target_position);
 
@@ -368,10 +478,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn clear_groupement_ui(window: &MainWindow) {
     window.set_impact_count(0);
-    window.set_grouping_center_visible(false);
+    window.set_average_impact_visible(false);
     window.set_grouping_diameter("—".into());
     window.set_grouping_center("—".into());
     window.set_grouping_offset("—".into());
+    window.set_average_impact_offset("—".into());
 }
 
 fn update_groupement_ui(
@@ -381,27 +492,40 @@ fn update_groupement_ui(
     calibration: &crate::cible::calibration::Calibration,
 ) {
     window.set_impact_count(impacts.len() as i32);
-    window.set_grouping_center_visible(false);
 
     let Some(groupement) = calculate_groupement(impacts) else {
         return;
     };
 
-    let center = groupement.center();
-    let center_image = calibration.mm_to_pixel(center);
-    let impact_count = groupement.count();
-    let show_grouping_center = impact_count >= 2;
+    let calibrated_points: Vec<Point> = impacts
+        .iter()
+        .filter_map(|impact| impact.position_cible)
+        .collect();
 
-    window.set_grouping_center_x(center.x);
-    window.set_grouping_center_y(center.y);
-    window.set_grouping_center_image_x(center_image.x);
-    window.set_grouping_center_image_y(center_image.y);
-    window.set_grouping_center_visible(show_grouping_center);
+    let Some(average_impact) = calculate_center(&calibrated_points) else {
+        return;
+    };
+
+    let average_impact_image = calibration.mm_to_pixel(average_impact);
+    window.set_average_impact_image_x(average_impact_image.x);
+    window.set_average_impact_image_y(average_impact_image.y);
+    window.set_average_impact_visible(calibrated_points.len() >= 2);
+
+    let average_distance_mrad = average_impact.distance_to(Point::new(0.0, 0.0)) / target_distance;
+    let average_offset_x_mrad = average_impact.x / target_distance;
+    let average_offset_y_mrad = average_impact.y / target_distance;
+    let average_distance_moa = average_distance_mrad * 3.4377468;
+    let average_offset_x_moa = average_offset_x_mrad * 3.4377468;
+    let average_offset_y_moa = average_offset_y_mrad * 3.4377468;
+
+    let center = groupement.center();
+    let impact_count = groupement.count();
 
     if impact_count < 2 {
         window.set_grouping_diameter("—".into());
         window.set_grouping_center("—".into());
         window.set_grouping_offset("—".into());
+        window.set_average_impact_offset("—".into());
         return;
     }
 
@@ -459,8 +583,18 @@ fn update_groupement_ui(
         )
         .into(),
     );
-    window.set_grouping_center_x(center.x);
-    window.set_grouping_center_y(center.y);
+    window.set_average_impact_offset(
+        format!(
+            "{:.2} mrad / {:.2} MOA · X {:.2} / Y {:.2} mrad · X {:.2} / Y {:.2} MOA",
+            average_distance_mrad,
+            average_distance_moa,
+            average_offset_x_mrad,
+            average_offset_y_mrad,
+            average_offset_x_moa,
+            average_offset_y_moa
+        )
+        .into(),
+    );
 }
 
 fn update_calibration_ui(window: &MainWindow, session: &CalibrationSession) {
