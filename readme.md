@@ -103,26 +103,26 @@ Sous Linux, quelques bibliothèques système restent néanmoins nécessaires.
 #### Debian / Ubuntu
 
 ```bash
-sudo apt install libclang-dev clang libx11-dev libwayland-dev libxkbcommon-dev libgl1-mesa-dev
+sudo apt install pkg-config clang libclang-dev libfontconfig1-dev libx11-dev libwayland-dev libxkbcommon-dev libgl1-mesa-dev
 ```
 
 #### Fedora
 
 ```bash
-sudo dnf install clang-devel clang libX11-devel wayland-devel libxkbcommon-devel mesa-libGL-devel
+sudo dnf install pkgconf-pkg-config fontconfig-devel clang-devel clang libX11-devel wayland-devel libxkbcommon-devel mesa-libGL-devel
 ```
 
 #### Arch Linux
 
 ```bash
-sudo pacman -S clang libx11 wayland libxkbcommon mesa
+sudo pacman -S pkgconf fontconfig clang libx11 wayland libxkbcommon mesa
 ```
 
 Notes :
 
 - `libclang` est requis par `nokhwa`/`v4l2` au moment de la compilation.
+- `pkg-config` et les fichiers de développement `fontconfig` sont requis par la chaîne de dépendances de `slint` sous Linux.
 - La configuration cible maintenant explicitement un backend caméra par système d’exploitation.
-- La dépendance Linux `fontconfig` n’est plus le blocage principal dans la configuration actuelle du projet.
 - La compilation a été validée avec succès sur Linux avec cette configuration.
 - Selon la distribution et la configuration graphique, d’autres paquets d’exécution peuvent encore être nécessaires.
 
