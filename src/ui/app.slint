@@ -1,5 +1,10 @@
 import { ImpactViewData, CameraDeviceViewData } from "types.slint";
 import { TargetView } from "target_view.slint";
+import { CameraSelection } from "camera_selection.slint";
+import { ShootConfiguration } from "shoot_configuration.slint";
+import { DataMetrics } from "data_metrics.slint";
+import { ListImpactsView } from "list_impacts.slint";
+import { CrudImpacts } from "impacts_crud.slint";
 
 import {
     VerticalBox,
@@ -201,13 +206,12 @@ export component MainWindow inherits Window {
                 vertical-b-y: vertical-b-y;
                 vertical-b-visible: vertical-b-visible;
 
-
                 // ─────────────────────────────────────────
                 // Clic dans l'image
                 // ─────────────────────────────────────────
                 impact-selected(index) => {
-                        root.impact-selected(index + 1);
-                    }
+                    root.impact-selected(index + 1);
+                }
 
                 image-clicked(x, y) => {
                     target_clicked(x, y);
@@ -231,273 +235,40 @@ export component MainWindow inherits Window {
                         font-size: 20px;
                     }
 
-                    Rectangle {
-                        background: #202020;
-                        border-radius: 8px;
+                    Camera-Selection := CameraSelection {
+                        section-open: root.camera-section-open;
+                        camera-devices: root.camera-devices;
+                        selected-camera: root.selected-camera;
 
-                        VerticalBox {
-                            padding: 8px;
-                            spacing: 4px;
-
-                            Rectangle {
-                                height: 24px;
-                                background: transparent;
-
-                                TouchArea {
-                                    width: parent.width;
-                                    height: parent.height;
-
-                                    clicked => {
-                                        root.camera-section-open = !root.camera-section-open;
-                                    }
-                                }
-
-                                Text {
-                                    x: 0px;
-                                    y: 3px;
-                                    text: (root.camera-section-open ? "▼ " : "▶ ") + "Caméras";
-                                    font-size: 16px;
-                                    color: white;
-                                }
-                            }
-
-                            if root.camera-section-open : Rectangle {
-                                height: 64px;
-                                background: #181818;
-                                border-radius: 6px;
-                                clip: true;
-
-                                VerticalBox {
-                                    padding: 3px;
-                                    spacing: 3px;
-
-                                    for camera in camera-devices : Rectangle {
-                                        height: 24px;
-                                        border-radius: 4px;
-
-                                        background: root.selected-camera == camera.index
-                                            ? #304860
-                                            : #252525;
-
-                                        TouchArea {
-                                            width: parent.width;
-                                            height: parent.height;
-
-                                            clicked => {
-                                                root.camera-selected(camera.index);
-                                            }
-                                        }
-
-                                        Text {
-                                            x: 8px;
-                                            y: 4px;
-                                            width: parent.width - 16px;
-                                            text: camera.name;
-                                            color: white;
-                                            overflow: elide;
-                                        }
-                                    }
-                                }
-                            }
+                        camera-selected(index) => {
+                            root.camera-selected(index);
                         }
                     }
 
-                    Rectangle {
-                        background: #202020;
-                        border-radius: 8px;
+                    Shoot-Configuration := ShootConfiguration {
+                        section-open: root.shooting-configuration-open;
+                        target-distance: root.target-distance;
+                        calibration-horizontal-distance: root.calibration-horizontal-distance;
+                        calibration-vertical-distance: root.calibration-vertical-distance;
+                        calibration-visible: root.calibration-visible;
+                        calibration-complete: root.calibration-complete;
+                        calibration-step: root.calibration-step;
+                        calibration-instruction: root.calibration-instruction;
 
-                        VerticalBox {
-                            padding: 12px;
-                            spacing: 8px;
+                        request-calibration() => {
+                            root.request_calibration();
+                        }
 
-                            Rectangle {
-                                height: 32px;
-                                background: transparent;
+                        cancel-calibration() => {
+                            root.cancel_calibration();
+                        }
 
-                                TouchArea {
-                                    width: parent.width;
-                                    height: parent.height;
+                        calibration-distances-validated() => {
+                            root.calibration_distances_validated();
+                        }
 
-                                    clicked => {
-                                        root.shooting-configuration-open = !root.shooting-configuration-open;
-                                    }
-                                }
-
-                                Text {
-                                    x: 0px;
-                                    y: 6px;
-                                    text: (root.shooting-configuration-open ? "▼ " : "▶ ") + "Configuration de tir";
-                                    font-size: 18px;
-                                    color: white;
-                                }
-                            }
-
-                            if root.shooting-configuration-open : VerticalBox {
-                                spacing: 8px;
-
-                                Text {
-                                    text: "Distance de tir";
-                                    color: #bbbbbb;
-                                }
-
-                                HorizontalBox {
-                                    spacing: 8px;
-
-                                    target-distance-input := LineEdit {
-                                        horizontal-stretch: 1;
-                                        text: root.target-distance;
-
-                                        accepted => {
-                                            let value = self.text.to-float();
-
-                                            if value > 0 {
-                                                root.target-distance = value;
-                                                root.target-distance-validated();
-                                            }
-                                        }
-                                    }
-
-                                    Text {
-                                        width: 28px;
-                                        text: "m";
-                                        vertical-alignment: center;
-                                    }
-
-                                    Button {
-                                        text: "Valider";
-
-                                        clicked => {
-                                            let value = target-distance-input.text.to-float();
-
-                                            if value > 0 {
-                                                root.target-distance = value;
-                                                root.target-distance-validated();
-                                            }
-                                        }
-                                    }
-                                }
-
-                                Rectangle {
-                                    height: 1px;
-                                    background: #3a3a3a;
-                                }
-
-                                Text {
-                                    text: "Calibration";
-                                    color: #bbbbbb;
-                                }
-
-                                HorizontalBox {
-                                    spacing: 8px;
-
-                                    horizontal-distance-input := LineEdit {
-                                        horizontal-stretch: 1;
-                                        text: root.calibration-horizontal-distance;
-
-                                        accepted => {
-                                            let value = self.text.to-float();
-
-                                            if value > 0 {
-                                                root.calibration-horizontal-distance = value;
-                                                root.calibration-distances-validated();
-                                            }
-                                        }
-                                    }
-
-                                    Text {
-                                        width: 28px;
-                                        text: "H";
-                                        vertical-alignment: center;
-                                    }
-
-                                    Text {
-                                        width: 28px;
-                                        text: "mm";
-                                        vertical-alignment: center;
-                                    }
-                                }
-
-                                HorizontalBox {
-                                    spacing: 8px;
-
-                                    vertical-distance-input := LineEdit {
-                                        horizontal-stretch: 1;
-                                        text: root.calibration-vertical-distance;
-
-                                        accepted => {
-                                            let value = self.text.to-float();
-
-                                            if value > 0 {
-                                                root.calibration-vertical-distance = value;
-                                                root.calibration-distances-validated();
-                                            }
-                                        }
-                                    }
-
-                                    Text {
-                                        width: 28px;
-                                        text: "V";
-                                        vertical-alignment: center;
-                                    }
-
-                                    Text {
-                                        width: 28px;
-                                        text: "mm";
-                                        vertical-alignment: center;
-                                    }
-                                }
-
-                                HorizontalBox {
-                                    spacing: 8px;
-
-                                    Button {
-                                        text: calibration-visible && !calibration-complete
-                                            ? "Recommencer"
-                                            : calibration-complete
-                                                ? "Recalibrer"
-                                                : "Calibrer la cible";
-
-                                        clicked => {
-                                            request-calibration();
-                                        }
-                                    }
-
-                                    Button {
-                                        text: "Appliquer";
-
-                                        clicked => {
-                                            let horizontal-value = horizontal-distance-input.text.to-float();
-                                            let vertical-value = vertical-distance-input.text.to-float();
-
-                                            if horizontal-value > 0 && vertical-value > 0 {
-                                                root.calibration-horizontal-distance = horizontal-value;
-                                                root.calibration-vertical-distance = vertical-value;
-                                                root.calibration-distances-validated();
-                                            }
-                                        }
-                                    }
-                                }
-
-                                if calibration-visible && !calibration-complete : Button {
-                                    text: "Annuler la calibration";
-
-                                    clicked => {
-                                        cancel-calibration();
-                                    }
-                                }
-
-                                Text {
-                                    text: "Étape : " + calibration-step;
-                                    color: #bbbbbb;
-                                    wrap: word-wrap;
-                                }
-
-                                Text {
-                                    text: calibration-instruction;
-                                    color: calibration-complete ? #80ffb0 : #80cfff;
-                                    wrap: word-wrap;
-                                }
-                            }
+                        target-distance-validated() => {
+                            root.target_distance_validated();
                         }
                     }
 
@@ -510,134 +281,91 @@ export component MainWindow inherits Window {
                             padding: 6px;
                             spacing: 4px;
 
-                            HorizontalBox {
-                                spacing: 6px;
-
-                                Text {
-                                    text: "Impacts";
-                                    font-size: 16px;
-                                    vertical-alignment: center;
+                            crud-impacts := CrudImpacts {
+                                selected-impact: root.selected-impact;
+                                moving-impact: root.moving-impact;
+                                capture_target => {
+                                    root.capture_target();
                                 }
-
-                                Rectangle {
-                                    horizontal-stretch: 1;
-                                    background: transparent;
+                                clear_impacts => {
+                                    root.clear_impacts();
                                 }
-
-                                Button {
-                                    text: "Capturer";
-                                    width: 90px;
-
-                                    clicked => {
-                                        capture_target();
-                                    }
+                                move-selected-impact => {
+                                    root.move-selected-impact();
                                 }
-
-                                Button {
-                                    text: "Effacer";
-                                    width: 80px;
-
-                                    clicked => {
-                                        clear_impacts();
-                                    }
+                                delete-selected-impact => {
+                                    root.delete-selected-impact();
                                 }
                             }
+                            // HorizontalBox {
+                            //     spacing: 6px;
 
-                            if root.selected-impact > 0 : HorizontalBox {
-                                spacing: 6px;
+                            //     Text {
+                            //         text: "Impacts";
+                            //         font-size: 16px;
+                            //         vertical-alignment: center;
+                            //     }
 
-                                Button {
-                                    text: moving-impact ? "Cliquez pour placer" : "Déplacer";
-                                    width: 120px;
+                            //     Rectangle {
+                            //         horizontal-stretch: 1;
+                            //         background: transparent;
+                            //     }
 
-                                    clicked => {
-                                        move-selected-impact();
-                                    }
-                                }
+                            //     Button {
+                            //         text: "Capturer";
+                            //         width: 90px;
 
-                                Button {
-                                    text: "Supprimer";
-                                    width: 100px;
+                            //         clicked => {
+                            //             capture_target();
+                            //         }
+                            //     }
 
-                                    clicked => {
-                                        delete-selected-impact();
-                                    }
-                                }
-                            }
+                            //     Button {
+                            //         text: "Effacer";
+                            //         width: 80px;
 
-                            Rectangle {
-                                vertical-stretch: 1;
-                                background: #181818;
-                                border-radius: 6px;
-                                clip: true;
+                            //         clicked => {
+                            //             clear_impacts();
+                            //         }
+                            //     }
+                            // }
 
-                                VerticalBox {
-                                    padding: 6px;
-                                    spacing: 4px;
+                            // if root.selected-impact > 0: HorizontalBox {
+                            //     spacing: 6px;
 
-                                    for impact in impacts : Rectangle {
-                                        height: 32px;
-                                        border-radius: 4px;
+                            //     Button {
+                            //         text: moving-impact ? "Cliquez pour placer" : "Déplacer";
+                            //         width: 120px;
 
-                                        background: root.selected-impact == impact.number
-                                            ? #554800
-                                            : #252525;
+                            //         clicked => {
+                            //             move-selected-impact();
+                            //         }
+                            //     }
 
-                                        TouchArea {
-                                            width: parent.width;
-                                            height: parent.height;
+                            //     Button {
+                            //         text: "Supprimer";
+                            //         width: 100px;
 
-                                            clicked => {
-                                                root.impact-selected(impact.number);
-                                            }
-                                        }
+                            //         clicked => {
+                            //             delete-selected-impact();
+                            //         }
+                            //     }
+                            // }
 
-                                        HorizontalLayout {
-                                            padding-left: 8px;
-                                            padding-right: 8px;
-                                            alignment: center;
-
-                                            Text {
-                                                width: 45px;
-                                                text: "#" + impact.number;
-                                                color: white;
-                                            }
-
-                                            Text {
-                                                width: 110px;
-                                                text: "X " + impact.target-x;
-                                                color: #80cfff;
-                                            }
-
-                                            Text {
-                                                width: 110px;
-                                                text: "Y " + impact.target-y;
-                                                color: #80ffb0;
-                                            }
-                                        }
-                                    }
+                            List-Impacts := ListImpactsView {
+                                impacts: root.impacts;
+                                selected-impact: root.selected-impact;
+                                impact-selected(index) => {
+                                    root.impact-selected(index);
                                 }
                             }
 
-                            Text {
-                                text: "Nombre : " + impact_count;
-                            }
-
-                            Text {
-                                text: "Décalage cercle : " + grouping-offset;
-                                font-size: 18px;
-                            }
-
-                            Text {
-                                text: "Point moyen d'impact : " + average-impact-offset;
-                            }
-
-                            Text {
-                                text: "Dispersion : " + grouping-diameter;
-                            }
-
-                            Text {
-                                text: "Écart au point visé : " + grouping-center;
+                            Data-Metrics := DataMetrics {
+                                impact_count: root.impact_count;
+                                grouping_center: root.grouping-center;
+                                grouping_offset: root.grouping-offset;
+                                grouping_diameter: root.grouping-diameter;
+                                average-impact-offset: root.average-impact-offset;
                             }
                         }
                     }

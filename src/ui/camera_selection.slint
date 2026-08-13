@@ -1,0 +1,79 @@
+import { VerticalBox } from "std-widgets.slint";
+import { CameraDeviceViewData } from "types.slint";
+
+export component CameraSelection inherits Rectangle {
+    in-out property <bool> section-open: false;
+    in property <[CameraDeviceViewData]> camera-devices: [];
+    in property <int> selected-camera: -1;
+
+    callback camera-selected(int);
+
+    background: #202020;
+    border-radius: 8px;
+
+    VerticalBox {
+        padding: 8px;
+        spacing: 4px;
+
+        Rectangle {
+            height: 24px;
+            background: transparent;
+
+            TouchArea {
+                width: parent.width;
+                height: parent.height;
+
+                clicked => {
+                    root.section-open = !root.section-open;
+                }
+            }
+
+            Text {
+                x: 0px;
+                y: 3px;
+                text: (root.section-open ? "▼ " : "▶ ") + "Caméras";
+                font-size: 16px;
+                color: white;
+            }
+        }
+
+        if root.section-open : Rectangle {
+            height: 64px;
+            background: #181818;
+            border-radius: 6px;
+            clip: true;
+
+            VerticalBox {
+                padding: 3px;
+                spacing: 3px;
+
+                for camera in camera-devices : Rectangle {
+                    height: 24px;
+                    border-radius: 4px;
+
+                    background: root.selected-camera == camera.index
+                        ? #304860
+                        : #252525;
+
+                    TouchArea {
+                        width: parent.width;
+                        height: parent.height;
+
+                        clicked => {
+                            root.camera-selected(camera.index);
+                        }
+                    }
+
+                    Text {
+                        x: 8px;
+                        y: 4px;
+                        width: parent.width - 16px;
+                        text: camera.name;
+                        color: white;
+                        overflow: elide;
+                    }
+                }
+            }
+        }
+    }
+}

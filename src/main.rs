@@ -585,7 +585,7 @@ fn update_groupement_ui(
     );
     window.set_average_impact_offset(
         format!(
-            "{:.2} mrad / {:.2} MOA · X {:.2} / Y {:.2} mrad · X {:.2} / Y {:.2} MOA",
+            "\r\n\t{:.2} mrad / {:.2} MOA \r\n\tX {:.2} / Y {:.2} mrad \r\n\tX {:.2} / Y {:.2} MOA",
             average_distance_mrad,
             average_distance_moa,
             average_offset_x_mrad,
