@@ -92,22 +92,21 @@ export component MainWindow inherits Window {
     // Actions
     // ─────────────────────────────────────────────
 
-    callback impact-selected(int);
-
-    callback connect-camera();
-    callback camera-selected(int);
-    callback capture_target();
-    callback set_center(float, float);
-    callback add_impact(float, float);
-    callback clear_impacts();
-    callback delete-selected-impact();
-    callback move-selected-impact();
-    callback target_clicked(float, float);
-    callback request-set-center();
-    callback request-calibration();
-    callback cancel-calibration();
-    callback calibration-distances-validated();
-    callback target-distance-validated();
+    callback impact-selected(int); //on_impact_selected
+    callback connect-camera(); //on_connect_camera
+    callback camera-selected(int); //on_camera_selected
+    callback capture_target(); //on_capture_target
+    // callback set_center(float, float);
+    // callback add_impact(float, float);
+    callback clear_impacts(); //on_clear_impacts
+    callback delete-selected-impact(); //on_delete_selected_impact
+    callback move-selected-impact(); //on_move_selected_impact
+    callback target_clicked(float, float); //on_target_clicked
+    // callback request-set-center();
+    callback request-calibration(); //on_request_calibration
+    callback cancel-calibration(); //on_cancel_calibration
+    callback calibration-distances-validated(); //on_calibration_distances_validated
+    callback target-distance-validated(); //on_target_distance_validated
 
     VerticalBox {
         spacing: 8px;
