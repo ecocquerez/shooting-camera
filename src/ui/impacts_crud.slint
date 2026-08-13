@@ -30,25 +30,23 @@ export component CrudImpacts inherits Rectangle {
             }
         }
 
-        if root.selected-impact > 0: HorizontalBox {
-            spacing: 6px;
+        Button {
+        visible: root.selected-impact > 0;
+            text: moving-impact ? "Cliquez pour placer" : "Déplacer";
+            width: 120px;
 
-            Button {
-                text: moving-impact ? "Cliquez pour placer" : "Déplacer";
-                width: 120px;
-
-                clicked => {
-                    move-selected-impact();
-                }
+            clicked => {
+                move-selected-impact();
             }
+        }
 
-            Button {
-                text: "Supprimer";
-                width: 100px;
+        Button {
+        visible: root.selected-impact > 0;
+            text: "Supprimer";
+            width: 100px;
 
-                clicked => {
-                    delete-selected-impact();
-                }
+            clicked => {
+                delete-selected-impact();
             }
         }
     }
