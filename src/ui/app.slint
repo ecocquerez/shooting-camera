@@ -135,43 +135,13 @@ export component MainWindow inherits Window {
             }
 
             Case {
-            Camera-Selection := CameraSelection {
-                section-open: root.camera-section-open;
-                camera-devices: root.camera-devices;
-                selected-camera: root.selected-camera;
+                Camera-Selection := CameraSelection {
+                    section-open: root.camera-section-open;
+                    camera-devices: root.camera-devices;
+                    selected-camera: root.selected-camera;
 
-                camera-selected(index) => {
-                    root.camera-selected(index);
-                }
-            }
-
-            }
-
-            Case {
-                Shoot-Configuration := ShootConfiguration {
-                    section-open: root.shooting-configuration-open;
-                    target-distance: root.target-distance;
-                    calibration-horizontal-distance: root.calibration-horizontal-distance;
-                    calibration-vertical-distance: root.calibration-vertical-distance;
-                    calibration-visible: root.calibration-visible;
-                    calibration-complete: root.calibration-complete;
-                    calibration-step: root.calibration-step;
-                    calibration-instruction: root.calibration-instruction;
-
-                    request-calibration() => {
-                        root.request_calibration();
-                    }
-
-                    cancel-calibration() => {
-                        root.cancel_calibration();
-                    }
-
-                    calibration-distances-validated() => {
-                        root.calibration_distances_validated();
-                    }
-
-                    target-distance-validated() => {
-                        root.target_distance_validated();
+                    camera-selected(index) => {
+                        root.camera-selected(index);
                     }
                 }
             }
@@ -193,6 +163,34 @@ export component MainWindow inherits Window {
                 }
                 delete-selected-impact => {
                     root.delete-selected-impact();
+                }
+            }
+        }
+
+        HorizontalBox {
+            min-height: 50px;
+            Shoot-Configuration := ShootConfiguration {
+                target-distance: root.target-distance;
+                calibration-horizontal-distance: root.calibration-horizontal-distance;
+                calibration-vertical-distance: root.calibration-vertical-distance;
+                calibration-complete: root.calibration-complete;
+                calibration-step: root.calibration-step;
+                calibration-instruction: root.calibration-instruction;
+
+                request-calibration() => {
+                    root.request_calibration();
+                }
+
+                cancel-calibration() => {
+                    root.cancel_calibration();
+                }
+
+                calibration-distances-validated() => {
+                    root.calibration_distances_validated();
+                }
+
+                target-distance-validated() => {
+                    root.target_distance_validated();
                 }
             }
         }

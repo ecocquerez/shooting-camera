@@ -3,15 +3,16 @@ import {
     HorizontalBox,
     Button,
     LineEdit,
+    GridBox,
 } from "std-widgets.slint";
 
+
 export component ShootConfiguration inherits Rectangle {
-    in-out property <bool> section-open: false;
+
     in-out property <float> target-distance: 100.0;
     in-out property <float> calibration-horizontal-distance: 100.0;
     in-out property <float> calibration-vertical-distance: 100.0;
 
-    in property <bool> calibration-visible: false;
     in property <bool> calibration-complete: false;
     in property <string> calibration-step: "Aucune";
     in property <string> calibration-instruction: "Cliquez sur \"Calibrer la cible\" pour démarrer.";
@@ -24,198 +25,97 @@ export component ShootConfiguration inherits Rectangle {
     background: #202020;
     border-radius: 8px;
 
-    VerticalBox {
-        padding: 12px;
-        spacing: 8px;
+    GridBox {
+        spacing-vertical: 2px;
+        Text {
+            color: white;
+            text: "Distance :";
+            vertical-alignment: center;
+        }
 
-        Rectangle {
-            height: 32px;
-            background: transparent;
+        target-distance-input := LineEdit {
+            horizontal-stretch: 1;
+            text: root.target-distance;
+            placeholder-text: "Distance de tir en m";
+            colspan: 2;
+            accepted => {
+                let value = self.text.to-float();
 
-            TouchArea {
-                width: parent.width;
-                height: parent.height;
-
-                clicked => {
-                    root.section-open = !root.section-open;
-                    debug("Change to section-open {}", root.section-open);
-
+                if value > 0 {
+                    root.target-distance = value;
+                    root.target-distance-validated();
                 }
-            }
-
-            Text {
-                x: 0px;
-                y: 6px;
-                text: (root.section-open ? "▼ " : "▶ ") + "Configuration du tir";
-                font-size: 18px;
-                color: white;
             }
         }
 
-        if root.section-open : VerticalBox {
-            spacing: 8px;
+        Text {
+            text: "X :";
+            vertical-alignment: center;
+        }
 
-            Text {
-                text: "Distance de tir";
-                color: #bbbbbb;
-            }
+        horizontal-distance-input := LineEdit {
+            placeholder-text: "Distance en mm";
+            horizontal-stretch: 1;
+            text: root.calibration-horizontal-distance;
 
-            HorizontalBox {
-                spacing: 8px;
+            accepted => {
+                let value = self.text.to-float();
 
-                target-distance-input := LineEdit {
-                    horizontal-stretch: 1;
-                    text: root.target-distance;
-
-                    accepted => {
-                        let value = self.text.to-float();
-
-                        if value > 0 {
-                            root.target-distance = value;
-                            root.target-distance-validated();
-                        }
-                    }
-                }
-
-                Text {
-                    width: 28px;
-                    text: "m";
-                    vertical-alignment: center;
-                }
-
-                Button {
-                    text: "Valider";
-
-                    clicked => {
-                        let value = target-distance-input.text.to-float();
-
-                        if value > 0 {
-                            root.target-distance = value;
-                            root.target-distance-validated();
-                        }
-                    }
+                if value > 0 {
+                    root.calibration-horizontal-distance = value;
+                    root.calibration-distances-validated();
                 }
             }
+        }
 
-            Rectangle {
-                height: 1px;
-                background: #3a3a3a;
-            }
+        Text {
+            text: "Y :";
+            vertical-alignment: center;
+        }
 
-            Text {
-                text: "Calibration";
-                color: #bbbbbb;
-            }
+        vertical-distance-input := LineEdit {
+            placeholder-text: "Distance en mm";
+            horizontal-stretch: 1;
+            text: root.calibration-vertical-distance;
 
-            HorizontalBox {
-                spacing: 8px;
+            accepted => {
+                let value = self.text.to-float();
 
-                horizontal-distance-input := LineEdit {
-                    horizontal-stretch: 1;
-                    text: root.calibration-horizontal-distance;
-
-                    accepted => {
-                        let value = self.text.to-float();
-
-                        if value > 0 {
-                            root.calibration-horizontal-distance = value;
-                            root.calibration-distances-validated();
-                        }
-                    }
-                }
-
-                Text {
-                    width: 28px;
-                    text: "H";
-                    vertical-alignment: center;
-                }
-
-                Text {
-                    width: 28px;
-                    text: "mm";
-                    vertical-alignment: center;
+                if value > 0 {
+                    root.calibration-vertical-distance = value;
+                    root.calibration-distances-validated();
                 }
             }
+        }
 
-            HorizontalBox {
-                spacing: 8px;
+        Button {
+            text: "Valider";
 
-                vertical-distance-input := LineEdit {
-                    horizontal-stretch: 1;
-                    text: root.calibration-vertical-distance;
+            clicked => {
+                let value = target-distance-input.text.to-float();
 
-                    accepted => {
-                        let value = self.text.to-float();
-
-                        if value > 0 {
-                            root.calibration-vertical-distance = value;
-                            root.calibration-distances-validated();
-                        }
-                    }
+                if value > 0 {
+                    root.target-distance = value;
+                    root.target-distance-validated();
                 }
+                let horizontal-value = horizontal-distance-input.text.to-float();
+                let vertical-value = vertical-distance-input.text.to-float();
 
-                Text {
-                    width: 28px;
-                    text: "V";
-                    vertical-alignment: center;
-                }
-
-                Text {
-                    width: 28px;
-                    text: "mm";
-                    vertical-alignment: center;
+                if horizontal-value > 0 && vertical-value > 0 {
+                    root.calibration-horizontal-distance = horizontal-value;
+                    root.calibration-vertical-distance = vertical-value;
+                    root.calibration-distances-validated();
                 }
             }
+        }
 
-            HorizontalBox {
-                spacing: 8px;
+        Button {
+            text: calibration-complete
+                ? "Recalibrer"
+                : "Calibrer la cible";
 
-                Button {
-                    text: calibration-visible && !calibration-complete
-                        ? "Recommencer"
-                        : calibration-complete
-                            ? "Recalibrer"
-                            : "Calibrer la cible";
-
-                    clicked => {
-                        root.request-calibration();
-                    }
-                }
-
-                Button {
-                    text: "Appliquer";
-
-                    clicked => {
-                        let horizontal-value = horizontal-distance-input.text.to-float();
-                        let vertical-value = vertical-distance-input.text.to-float();
-
-                        if horizontal-value > 0 && vertical-value > 0 {
-                            root.calibration-horizontal-distance = horizontal-value;
-                            root.calibration-vertical-distance = vertical-value;
-                            root.calibration-distances-validated();
-                        }
-                    }
-                }
-            }
-
-            if calibration-visible && !calibration-complete : Button {
-                text: "Annuler la calibration";
-
-                clicked => {
-                    root.cancel-calibration();
-                }
-            }
-
-            Text {
-                text: "Étape : " + calibration-step;
-                color: #bbbbbb;
-                wrap: word-wrap;
-            }
-
-            Text {
-                text: calibration-instruction;
-                color: calibration-complete ? #80ffb0 : #80cfff;
-                wrap: word-wrap;
+            clicked => {
+                root.request-calibration();
             }
         }
     }
