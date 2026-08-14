@@ -11,6 +11,7 @@ import {
     Button,
     LineEdit,
 } from "std-widgets.slint";
+import { SText } from "composant.slint";
 
 export struct ImpactData {
     x: float,
@@ -18,7 +19,7 @@ export struct ImpactData {
     distance: float,
 }
 
-export component Case inherits Rectangle {
+component Case inherits Rectangle {
     in property <string> label;
     in property <color> borderColor: #343d46;
     border-color: borderColor;
@@ -45,7 +46,7 @@ export component MainWindow inherits Window {
     in property <string> camera_status: "Caméra non connectée";
     in property <string> camera_fps: "-- FPS";
     in property <image> camera_image;
-    in property <[CameraDeviceViewData]> camera-devices: [];
+    in property <[string]> camera-devices: [];
     in property <int> selected-camera: -1;
     in property <int> selected-impact: -1;
     in property <bool> moving-impact: false;
@@ -65,6 +66,8 @@ export component MainWindow inherits Window {
     in property <string> grouping-diameter: "--";
     in property <string> grouping-center: "--";
     in property <string> grouping-offset: "--";
+    in property <string> grouping_width: "--";
+    in property <string> grouping_height: "-";
     in property <string> average-impact-offset: "--";
     in property <bool> average-impact-visible: false;
     in property <float> average-impact-image-x: 360;
@@ -128,27 +131,6 @@ export component MainWindow inherits Window {
         padding: 5px;
         HorizontalBox {
             min-height: 50px;
-            Text {
-                text: "Target Shooter";
-                font-size: 24px;
-                vertical-alignment: center;
-            }
-
-            Case {
-                Camera-Selection := CameraSelection {
-                    section-open: root.camera-section-open;
-                    camera-devices: root.camera-devices;
-                    selected-camera: root.selected-camera;
-
-                    camera-selected(index) => {
-                        root.camera-selected(index);
-                    }
-                }
-            }
-        }
-
-        HorizontalBox {
-            min-height: 50px;
             crud-impacts := CrudImpacts {
                 selected-impact: root.selected-impact;
                 moving-impact: root.moving-impact;
@@ -163,6 +145,15 @@ export component MainWindow inherits Window {
                 }
                 delete-selected-impact => {
                     root.delete-selected-impact();
+                }
+            }
+            Camera-Selection := CameraSelection {
+                camera-names: root.camera-devices;
+                selected-camera: root.selected-camera;
+
+                camera-selected(index) => {
+                    root.camera-selected(index);
+                    root.camera-section-open = false;
                 }
             }
         }
@@ -261,7 +252,7 @@ export component MainWindow inherits Window {
             }
 
             Case {
-                width: 300px;
+                width: 350px;
                 VerticalBox {
                     Case {
                         min-height: 300px;
@@ -276,12 +267,14 @@ export component MainWindow inherits Window {
 
                     Case {
                         Data-Metrics := DataMetrics {
-                            max-height: 80px;
+                            max-height: 100px;
                             impact_count: root.impact_count;
                             grouping_center: root.grouping-center;
                             grouping_offset: root.grouping-offset;
                             grouping_diameter: root.grouping-diameter;
                             average-impact-offset: root.average-impact-offset;
+                            grouping_widht: root.grouping_width;
+                            grouping_height: root.grouping_height;
                         }
                     }
                 }

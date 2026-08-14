@@ -1,13 +1,17 @@
 import {
     VerticalBox
 } from "std-widgets.slint";
+import {SText} from "composant.slint";
 
 export component DataMetrics inherits Rectangle {
     in property <int> impact_count;
-    in property <string> grouping_offset;
     in property <string> grouping_diameter;
+    in property <string> grouping_widht;
+    in property <string> grouping_height;
+    in property <string> grouping_offset;
     in property <string> grouping_center;
     in property <string> average-impact-offset;
+    in property <string> grouping_es;
 
     background: #181818;
     border-radius: 6px;
@@ -16,30 +20,31 @@ export component DataMetrics inherits Rectangle {
         padding: 8px;
         spacing: 4px;
 
-        Number-Shoot := Text {
+        Number-Shoot := SText {
             text: "Nombre : " + impact_count;
-            font-size: 14px;
         }
 
-        Group-Offset := Text {
+        Group-Offset := SText {
             text: "Décalage cercle : " + grouping-offset;
-            font-size: 14px;
         }
 
-        PMI := Text {
+        PMI := SText {
             text: "Point moyen d'impact : " + average-impact-offset;
             wrap: word-wrap;
-            font-size: 14px;
         }
 
-        Dispersion := Text {
+        Dispersion := SText {
             text: "Dispersion : " + grouping-diameter;
-            font-size: 14px;
         }
 
-        Point-Vise := Text {
+        Point-Vise := SText {
             text: "Écart au point visé : " + grouping-center;
-            font-size: 14px;
+        }
+        SText {
+        text: "Largeur : " + grouping_widht;
+        }
+        SText {
+        text: "Hauteur : " + grouping_height;
         }
     }
 }

@@ -9,6 +9,7 @@ use crate::cible::geometry::calculate_center;
 use crate::cible::groupement::calculate_groupement;
 use crate::model::{Impact, Point};
 
+use slint::{ModelRc, SharedString};
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Duration;
@@ -32,19 +33,13 @@ fn load_camera_devices(
     window: &MainWindow,
 ) -> Result<Vec<camera::CameraDevice>, nokhwa::NokhwaError> {
     let devices = camera::enumerate()?;
-
-    let model: Vec<CameraDeviceViewData> = devices
+    let camera_names: VecModel<SharedString> = devices
         .iter()
-        .enumerate()
-        .map(|(index, device)| CameraDeviceViewData {
-            index: index as i32,
-            name: device.name.clone().into(),
-        })
+        .map(|device| device.name.clone().into())
         .collect();
-
-    window.set_camera_devices(Rc::new(VecModel::from(model)).into());
+    let camera_names = ModelRc::new(VecModel::from(camera_names));
+    window.set_camera_devices(camera_names);
     window.set_selected_camera(if devices.is_empty() { -1 } else { 0 });
-
     Ok(devices)
 }
 
@@ -114,6 +109,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let devices_for_refresh = devices.clone();
     let capture_for_refresh = capture.clone();
     let ui_weak = ui.as_weak();
+
     ui.on_connect_camera(move || {
         if let Some(ui) = ui_weak.upgrade() {
             match load_camera_devices(&ui) {
@@ -492,7 +488,9 @@ fn update_groupement_ui(
     calibration: &crate::cible::calibration::Calibration,
 ) {
     window.set_impact_count(impacts.len() as i32);
-
+    if impacts.len() < 2 {
+        return;
+    }
     let Some(groupement) = calculate_groupement(impacts) else {
         return;
     };
@@ -505,7 +503,7 @@ fn update_groupement_ui(
     let Some(average_impact) = calculate_center(&calibrated_points) else {
         return;
     };
-
+    //Affichage du PMI
     let average_impact_image = calibration.mm_to_pixel(average_impact);
     window.set_average_impact_image_x(average_impact_image.x);
     window.set_average_impact_image_y(average_impact_image.y);
