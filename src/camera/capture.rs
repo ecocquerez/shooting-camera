@@ -122,7 +122,6 @@ fn capture_loop(
     println!("Format caméra : {}", camera.camera_format());
 
     camera.open_stream()?;
-    let mut frame_count = 0u64;
     let mut last_report = std::time::Instant::now();
     println!("Flux caméra démarré.");
 
@@ -146,12 +145,8 @@ fn capture_loop(
         }
 
         let frame = camera.frame()?;
-        frame_count += 1;
 
         if last_report.elapsed() >= std::time::Duration::from_secs(1) {
-            println!("[Camera thread] {} FPS", frame_count);
-
-            frame_count = 0;
             last_report = std::time::Instant::now();
         }
         let image = frame.decode_image::<RgbFormat>()?;

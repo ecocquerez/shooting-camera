@@ -123,7 +123,7 @@ export component MainWindow inherits Window {
     callback request-calibration(); //on_request_calibration
     callback cancel-calibration(); //on_cancel_calibration
     callback calibration-distances-validated(); //on_calibration_distances_validated
-    callback target-distance-validated(); //on_target_distance_validated
+    callback target-distance-validated(float); //on_target_distance_validated
 
 
     VerticalLayout {
@@ -165,6 +165,7 @@ export component MainWindow inherits Window {
                 calibration-horizontal-distance: root.calibration-horizontal-distance;
                 calibration-vertical-distance: root.calibration-vertical-distance;
                 calibration-complete: root.calibration-complete;
+                calibration-visible: root.calibration-visible;
                 calibration-step: root.calibration-step;
                 calibration-instruction: root.calibration-instruction;
 
@@ -177,11 +178,14 @@ export component MainWindow inherits Window {
                 }
 
                 calibration-distances-validated() => {
+                debug("calibration-distance-validated in app.slint {} {}", target_distance, root.target_distance);
                     root.calibration_distances_validated();
                 }
 
-                target-distance-validated() => {
-                    root.target_distance_validated();
+                target-distance-validated(value) => {
+                    target_distance = value;
+                    debug("Target distance valided called in app.slint {} {}", target_distance, root.target_distance);
+                    root.target_distance_validated(value);
                 }
             }
         }
@@ -216,7 +220,7 @@ export component MainWindow inherits Window {
             // Calibration
             // ─────────────────────────────────────────
 
-            calibration-visible: calibration-visible;
+                    calibration-visible: calibration-visible;
                     calibration-step: calibration-step;
                     calibration-active-point: calibration-active-point;
                     calibration-instruction: calibration-instruction;

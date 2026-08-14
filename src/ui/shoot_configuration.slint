@@ -14,13 +14,14 @@ export component ShootConfiguration inherits Rectangle {
     in-out property <float> calibration-vertical-distance: 100.0;
 
     in property <bool> calibration-complete: false;
+    in property <bool> calibration_visible: false;
     in property <string> calibration-step: "Aucune";
     in property <string> calibration-instruction: "Cliquez sur \"Calibrer la cible\" pour démarrer.";
 
     callback request-calibration();
     callback cancel-calibration();
     callback calibration-distances-validated();
-    callback target-distance-validated();
+    callback target-distance-validated(float);
 
     background: #202020;
     border-radius: 8px;
@@ -40,10 +41,11 @@ export component ShootConfiguration inherits Rectangle {
             colspan: 2;
             accepted => {
                 let value = self.text.to-float();
-
+                debug("value in accepted is : {}", value);
                 if value > 0 {
                     root.target-distance = value;
-                    root.target-distance-validated();
+                    debug("Target distance valided called in shoot_configuration.slint -> accepted");
+                    root.target-distance-validated(value);
                 }
             }
         }
@@ -89,30 +91,9 @@ export component ShootConfiguration inherits Rectangle {
         }
 
         Button {
-            text: "Valider";
-
-            clicked => {
-                let value = target-distance-input.text.to-float();
-
-                if value > 0 {
-                    root.target-distance = value;
-                    root.target-distance-validated();
-                }
-                let horizontal-value = horizontal-distance-input.text.to-float();
-                let vertical-value = vertical-distance-input.text.to-float();
-
-                if horizontal-value > 0 && vertical-value > 0 {
-                    root.calibration-horizontal-distance = horizontal-value;
-                    root.calibration-vertical-distance = vertical-value;
-                    root.calibration-distances-validated();
-                }
-            }
-        }
-
-        Button {
-            text: calibration-complete
-                ? "Annuler"
-                : "Calibrer la cible";
+            text: (!calibration-complete && !calibration_visible) ? "Calibrer"
+                : (!calibration-complete && calibration_visible) ? "Recommencer"
+                : "Calibrer";
 
             clicked => {
                 root.request-calibration();
