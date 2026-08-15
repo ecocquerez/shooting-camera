@@ -19,3 +19,12 @@ nokhwa = { version = "0.10.11", features = ["input-avfoundation"] }
 
 [build-dependencies]
 slint-build = "1.17.1"
+
+[profile.dev]
+debug = "line-tables-only"
+incremental = true
+codegen-units = 256
+
+[profile.dev.package."*"]
+opt-level = 1
+debug = false

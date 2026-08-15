@@ -146,6 +146,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     ui_target_clicked(&ui, calibration, impacts, selected_impact, moving_impact);
 
+    let devices_for_callback = Rc::clone(&devices);
+    let ui_weak = ui.as_weak();
+    ui.on_search_camera(move || {
+        println!("========== RESCAN ==========");
+
+        if let Some(ui) = ui_weak.upgrade() {
+            match load_camera_devices(&ui) {
+                Ok(new_devices) => {
+                    println!("Nouvelles caméras : {}", new_devices.len());
+
+                    for device in &new_devices {
+                        println!("  {}", device.name);
+                    }
+
+                    *devices_for_callback.borrow_mut() = new_devices;
+
+                    println!(
+                        "devices après update : {}",
+                        devices_for_callback.borrow().len()
+                    );
+                }
+                Err(e) => {
+                    eprintln!("Erreur : {e}");
+                }
+            }
+        }
+    });
+
     let timer = Timer::default();
     let ui_weak = ui.as_weak();
     let capture_for_timer = capture.clone();
