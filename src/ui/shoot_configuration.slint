@@ -1,0 +1,103 @@
+import {
+    VerticalBox,
+    HorizontalBox,
+    Button,
+    LineEdit,
+    GridBox,
+} from "std-widgets.slint";
+import {SText} from "composant.slint";
+
+export component ShootConfiguration inherits Rectangle {
+
+    in-out property <float> target-distance: 100.0;
+    in-out property <float> calibration-horizontal-distance: 100.0;
+    in-out property <float> calibration-vertical-distance: 100.0;
+
+    in property <bool> calibration-complete: false;
+    in property <bool> calibration_visible: false;
+    in property <string> calibration-step: "Aucune";
+    in property <string> calibration-instruction: "Cliquez sur \"Calibrer la cible\" pour démarrer.";
+
+    callback request-calibration();
+    callback cancel-calibration();
+    callback calibration-distances-validated();
+    callback target-distance-validated(float);
+
+    background: #202020;
+    border-radius: 8px;
+
+    GridBox {
+        spacing-vertical: 2px;
+        Text {
+            color: white;
+            text: "Distance (m):";
+            vertical-alignment: center;
+        }
+
+        target-distance-input := LineEdit {
+            horizontal-stretch: 1;
+            text: root.target-distance;
+            placeholder-text: "Distance de tir en m";
+            colspan: 2;
+            accepted => {
+                let value = self.text.to-float();
+                debug("value in accepted is : {}", value);
+                if value > 0 {
+                    root.target-distance = value;
+                    debug("Target distance valided called in shoot_configuration.slint -> accepted");
+                    root.target-distance-validated(value);
+                }
+            }
+        }
+
+        SText {
+            text: "X (mm) :";
+            vertical-alignment: center;
+        }
+
+        horizontal-distance-input := LineEdit {
+            placeholder-text: "Distance en mm";
+            horizontal-stretch: 1;
+            text: root.calibration-horizontal-distance;
+
+            accepted => {
+                let value = self.text.to-float();
+
+                if value > 0 {
+                    root.calibration-horizontal-distance = value;
+                    root.calibration-distances-validated();
+                }
+            }
+        }
+
+        SText {
+            text: "Y (mm):";
+            vertical-alignment: center;
+        }
+
+        vertical-distance-input := LineEdit {
+            placeholder-text: "Distance en mm";
+            horizontal-stretch: 1;
+            text: root.calibration-vertical-distance;
+
+            accepted => {
+                let value = self.text.to-float();
+
+                if value > 0 {
+                    root.calibration-vertical-distance = value;
+                    root.calibration-distances-validated();
+                }
+            }
+        }
+
+        Button {
+            text: (!calibration-complete && !calibration_visible) ? "Calibrer"
+                : (!calibration-complete && calibration_visible) ? "Recommencer"
+                : "Calibrer";
+
+            clicked => {
+                root.request-calibration();
+            }
+        }
+    }
+}

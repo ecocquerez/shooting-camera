@@ -1,0 +1,36 @@
+import { VerticalBox, ComboBox, Button } from "std-widgets.slint";
+import { CameraDeviceViewData } from "types.slint";
+
+export component CameraSelection inherits Rectangle {
+    in-out property <int> selected-camera: -1;
+    callback camera-selected(int);
+    callback search-camera();
+    background: #202020;
+    border-radius: 8px;
+
+    in property <[string]> camera-names;
+    HorizontalLayout {
+    spacing: 8px;
+        ComboBox {
+            horizontal-stretch: 3;
+            max-width: 200px;
+            model: root.camera-names;
+            current-index: root.selected-camera;
+            selected(value) => {
+                let camera = root.camera-names[self.current-index];
+                debug(camera-names);
+                root.selected-camera = self.current-index;
+                root.camera-selected(self.current-index);
+            }
+        }
+
+        Button {
+            horizontal-stretch: 1;
+            max-width: 50px;
+            text: "Rescan";
+            clicked => {
+                root.search-camera();
+            }
+        }
+    }
+}

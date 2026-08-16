@@ -1,0 +1,57 @@
+import { ListView } from "std-widgets.slint";
+
+import { ImpactViewData, CameraDeviceViewData } from "types.slint";
+
+
+export component ListImpactsView inherits Rectangle {
+    background: #181818;
+    border-radius: 6px;
+
+    in property <[ImpactViewData]> impacts: [];
+    in property <int> selected-impact: -1;
+
+    callback impact-selected(int);
+    ListView {
+        for impact in impacts: Rectangle {
+            height: 32px;
+            border-radius: 4px;
+
+            background: root.selected-impact == impact.number
+                ? #554800
+                : #252525;
+
+            TouchArea {
+                width: parent.width;
+                height: parent.height;
+
+                clicked => {
+                    root.impact-selected(impact.number);
+                }
+            }
+
+            HorizontalLayout {
+                padding-left: 8px;
+                padding-right: 8px;
+                alignment: center;
+
+                Text {
+                    width: 45px;
+                    text: "#" + impact.number;
+                    color: white;
+                }
+
+                Text {
+                    width: 110px;
+                    text: "X " + impact.target-x;
+                    color: #80cfff;
+                }
+
+                Text {
+                    width: 110px;
+                    text: "Y " + impact.target-y;
+                    color: #80ffb0;
+                }
+            }
+        }
+    }
+}

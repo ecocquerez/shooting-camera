@@ -1,0 +1,53 @@
+import { HorizontalBox, Button } from "std-widgets.slint";
+
+export component CrudImpacts inherits Rectangle {
+    background: #202020;
+    border-radius: 8px;
+
+    in property <int> selected-impact: -1;
+    in property <bool> moving-impact;
+
+    callback capture_target();
+    callback clear_impacts();
+    callback move-selected-impact();
+    callback delete-selected-impact();
+    HorizontalBox {
+        Button {
+            text: "Capturer";
+            width: 90px;
+
+            clicked => {
+                capture_target();
+            }
+        }
+
+        Button {
+            text: "Effacer";
+            width: 80px;
+
+            clicked => {
+                clear_impacts();
+            }
+        }
+
+        Button {
+        visible: root.selected-impact > 0;
+            text: moving-impact ? "Cliquez pour placer" : "Déplacer";
+            width: 120px;
+
+            clicked => {
+                move-selected-impact();
+            }
+        }
+
+        Button {
+        visible: root.selected-impact > 0;
+            text: "Supprimer";
+            width: 100px;
+
+            clicked => {
+                delete-selected-impact();
+            }
+        }
+    }
+}

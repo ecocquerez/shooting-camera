@@ -9,6 +9,7 @@ use crate::cible::geometry::calculate_center;
 use crate::cible::groupement::calculate_groupement;
 use crate::model::{Impact, Point};
 
+use slint::{ModelRc, SharedString};
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Duration;
@@ -32,19 +33,13 @@ fn load_camera_devices(
     window: &MainWindow,
 ) -> Result<Vec<camera::CameraDevice>, nokhwa::NokhwaError> {
     let devices = camera::enumerate()?;
-
-    let model: Vec<CameraDeviceViewData> = devices
+    let camera_names: VecModel<SharedString> = devices
         .iter()
-        .enumerate()
-        .map(|(index, device)| CameraDeviceViewData {
-            index: index as i32,
-            name: device.name.clone().into(),
-        })
+        .map(|device| device.name.clone().into())
         .collect();
-
-    window.set_camera_devices(Rc::new(VecModel::from(model)).into());
+    let camera_names = ModelRc::new(VecModel::from(camera_names));
+    window.set_camera_devices(camera_names);
     window.set_selected_camera(if devices.is_empty() { -1 } else { 0 });
-
     Ok(devices)
 }
 
@@ -59,7 +54,7 @@ fn select_camera_format(
     camera::select_best_format(&formats).ok_or_else(|| "Aucun format vidéo compatible".into())
 }
 
-fn connect_selected_camera(
+fn ui_connect_selected_camera(
     window: &MainWindow,
     devices: &[camera::CameraDevice],
     selected_device: usize,
@@ -104,262 +99,117 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    connect_selected_camera(&ui, &devices.borrow(), 0, &capture);
-
     let calibration = Rc::new(RefCell::new(CalibrationSession::new()));
     let impacts = Rc::new(RefCell::new(Vec::<Impact>::new()));
     let selected_impact = Rc::new(RefCell::new(None::<usize>));
     let moving_impact = Rc::new(RefCell::new(false));
 
+    ui_connect_selected_camera(&ui, &devices.borrow(), 0, &capture);
+
     let devices_for_refresh = devices.clone();
     let capture_for_refresh = capture.clone();
     let ui_weak = ui.as_weak();
-    ui.on_connect_camera(move || {
-        if let Some(ui) = ui_weak.upgrade() {
-            match load_camera_devices(&ui) {
-                Ok(new_devices) => {
-                    *devices_for_refresh.borrow_mut() = new_devices;
 
-                    if devices_for_refresh.borrow().is_empty() {
-                        capture_for_refresh.borrow_mut().take();
-                        ui.set_camera_status("Aucune caméra trouvée".into());
-                    }
-                }
-                Err(error) => {
-                    ui.set_camera_status(format!("Erreur caméra : {}", error).into());
-                }
-            }
-        }
-    });
+    connect_camera(&ui, devices_for_refresh, capture_for_refresh, ui_weak);
 
     let devices_for_selection = devices.clone();
     let capture_for_selection = capture.clone();
+
     let ui_weak = ui.as_weak();
-    ui.on_camera_selected(move |index| {
-        if let Some(ui) = ui_weak.upgrade() {
-            connect_selected_camera(
-                &ui,
-                &devices_for_selection.borrow(),
-                index as usize,
-                &capture_for_selection,
-            );
-            ui.set_camera_section_open(false);
-        }
-    });
+    camera_selected(&ui, devices_for_selection, capture_for_selection, ui_weak);
 
     let calibration_for_start = calibration.clone();
     let ui_weak = ui.as_weak();
-    ui.on_request_calibration(move || {
-        let mut session = calibration_for_start.borrow_mut();
-        session.start();
+    ui_request_calibration(&ui, calibration_for_start, ui_weak);
 
-        println!("Calibration démarrée : {:?}", session.step());
+    ui_calibration_distances_validated(&ui, &calibration);
+
+    ui_cancel_calibration(&ui, &calibration);
+
+    ui_capture_target(&ui, &calibration);
+
+    ui_impact_selected(&ui, &selected_impact);
+
+    ui_clear_impacts(&ui, &impacts, &selected_impact, &moving_impact);
+
+    ui_move_impact(&ui, &selected_impact, &moving_impact);
+
+    ui_delete_selected_impact(
+        &ui,
+        &calibration,
+        &impacts,
+        &selected_impact,
+        &moving_impact,
+    );
+
+    ui_target_distance_validated(&ui, &calibration, &impacts);
+
+    ui_target_clicked(&ui, calibration, impacts, selected_impact, moving_impact);
+
+    let devices_for_callback = Rc::clone(&devices);
+    let ui_weak = ui.as_weak();
+    ui.on_search_camera(move || {
+        println!("========== RESCAN ==========");
 
         if let Some(ui) = ui_weak.upgrade() {
-            update_calibration_ui(&ui, &session);
-        }
-    });
+            match load_camera_devices(&ui) {
+                Ok(new_devices) => {
+                    println!("Nouvelles caméras : {}", new_devices.len());
 
-    ui.on_calibration_distances_validated({
-        let calibration = calibration.clone();
-        let ui_weak = ui.as_weak();
-
-        move || {
-            let mut session = calibration.borrow_mut();
-
-            if let Some(ui) = ui_weak.upgrade() {
-                let horizontal = ui.get_calibration_horizontal_distance();
-                let vertical = ui.get_calibration_vertical_distance();
-
-                if let Err(error) = session.set_reference_distances(horizontal, vertical) {
-                    println!("Distances de calibration invalides : {:?}", error);
-                }
-
-                if session.is_complete() {
-                    if let Err(error) = session.build_calibration(horizontal, vertical) {
-                        println!("Impossible de reconstruire la calibration : {:?}", error);
+                    for device in &new_devices {
+                        println!("  {}", device.name);
                     }
+
+                    *devices_for_callback.borrow_mut() = new_devices;
+
+                    println!(
+                        "devices après update : {}",
+                        devices_for_callback.borrow().len()
+                    );
                 }
-
-                update_calibration_ui(&ui, &session);
-            }
-        }
-    });
-
-    ui.on_cancel_calibration({
-        let calibration = calibration.clone();
-        let ui_weak = ui.as_weak();
-
-        move || {
-            let mut session = calibration.borrow_mut();
-            session.cancel();
-
-            if let Some(ui) = ui_weak.upgrade() {
-                update_calibration_ui(&ui, &session);
-            }
-        }
-    });
-
-    ui.on_capture_target({
-        let calibration = calibration.clone();
-        let ui_weak = ui.as_weak();
-
-        move || {
-            let session = calibration.borrow();
-
-            if let Some(ui) = ui_weak.upgrade() {
-                ui.set_calibration_visible(false);
-                ui.set_calibration_complete(false);
-                ui.set_calibration_step("Aucune".into());
-                ui.set_calibration_active_point("".into());
-                ui.set_calibration_instruction("".into());
-
-                ui.set_horizontal_a_visible(false);
-                ui.set_horizontal_b_visible(false);
-                ui.set_vertical_a_visible(false);
-                ui.set_vertical_b_visible(false);
-
-                if session.calibration().is_some() {
-                    ui.set_shooting_configuration_open(false);
+                Err(e) => {
+                    eprintln!("Erreur : {e}");
                 }
             }
         }
     });
 
-    ui.on_impact_selected({
-        let selected_impact = selected_impact.clone();
-        let ui_weak = ui.as_weak();
+    let timer = Timer::default();
+    let ui_weak = ui.as_weak();
+    let capture_for_timer = capture.clone();
 
-        move |index| {
-            let selected_index = if index > 0 {
-                (index - 1) as usize
-            } else {
-                index as usize
+    timer.start(
+        slint::TimerMode::Repeated,
+        Duration::from_millis(33),
+        move || {
+            let frame = {
+                let capture = capture_for_timer.borrow();
+                capture
+                    .as_ref()
+                    .and_then(|capture| capture.try_receive_frame())
             };
 
-            *selected_impact.borrow_mut() = Some(selected_index);
+            if let Some(frame) = frame {
+                let image = frame_to_slint_image(frame);
 
-            println!("Impact sélectionné : #{}", selected_index + 1);
-
-            if let Some(ui) = ui_weak.upgrade() {
-                ui.set_selected_impact((selected_index + 1) as i32);
-            }
-        }
-    });
-
-    ui.on_clear_impacts({
-        let impacts = impacts.clone();
-        let selected_impact = selected_impact.clone();
-        let moving_impact = moving_impact.clone();
-        let ui_weak = ui.as_weak();
-
-        move || {
-            impacts.borrow_mut().clear();
-            *selected_impact.borrow_mut() = None;
-            *moving_impact.borrow_mut() = false;
-
-            if let Some(ui) = ui_weak.upgrade() {
-                ui.set_selected_impact(-1);
-                ui.set_moving_impact(false);
-                update_impacts_ui(&ui, &[]);
-                clear_groupement_ui(&ui);
-            }
-        }
-    });
-
-    ui.on_move_selected_impact({
-        let moving_impact = moving_impact.clone();
-        let selected_impact = selected_impact.clone();
-        let ui_weak = ui.as_weak();
-
-        move || {
-            if selected_impact.borrow().is_none() {
-                return;
-            }
-
-            let new_state = !*moving_impact.borrow();
-            *moving_impact.borrow_mut() = new_state;
-
-            if let Some(ui) = ui_weak.upgrade() {
-                ui.set_moving_impact(new_state);
-            }
-        }
-    });
-
-    ui.on_delete_selected_impact({
-        let impacts = impacts.clone();
-        let selected_impact = selected_impact.clone();
-        let moving_impact = moving_impact.clone();
-        let calibration = calibration.clone();
-        let ui_weak = ui.as_weak();
-
-        move || {
-            let Some(selected_index) = *selected_impact.borrow() else {
-                return;
-            };
-
-            let mut impacts = impacts.borrow_mut();
-
-            if selected_index >= impacts.len() {
-                return;
-            }
-
-            impacts.remove(selected_index);
-
-            for (index, impact) in impacts.iter_mut().enumerate() {
-                impact.number = index as u32 + 1;
-            }
-
-            let new_selection = if impacts.is_empty() {
-                None
-            } else if selected_index >= impacts.len() {
-                Some(impacts.len() - 1)
-            } else {
-                Some(selected_index)
-            };
-
-            *selected_impact.borrow_mut() = new_selection;
-            *moving_impact.borrow_mut() = false;
-
-            if let Some(ui) = ui_weak.upgrade() {
-                ui.set_moving_impact(false);
-                ui.set_selected_impact(new_selection.map(|index| (index + 1) as i32).unwrap_or(-1));
-                update_impacts_ui(&ui, &impacts);
-
-                let session = calibration.borrow();
-                if let Some(calibration) = session.calibration() {
-                    let target_distance = ui.get_target_distance();
-                    update_groupement_ui(&ui, &impacts, target_distance, calibration);
-                } else {
-                    clear_groupement_ui(&ui);
+                if let Some(ui) = ui_weak.upgrade() {
+                    ui.set_camera_image(image);
                 }
             }
-        }
-    });
+        },
+    );
 
-    ui.on_target_distance_validated({
-        let impacts = impacts.clone();
-        let calibration = calibration.clone();
-        let ui_weak = ui.as_weak();
+    ui.run()?;
+    Ok(())
+}
 
-        move || {
-            if let Some(ui) = ui_weak.upgrade() {
-                let distance = ui.get_target_distance();
-                let impacts = impacts.borrow();
-                let session = calibration.borrow();
-
-                ui.set_shooting_configuration_open(false);
-
-                let Some(calibration) = session.calibration() else {
-                    println!("Impossible de recalculer le groupement : cible non calibrée");
-                    return;
-                };
-
-                update_groupement_ui(&ui, &impacts, distance, calibration);
-            }
-        }
-    });
-
+fn ui_target_clicked(
+    ui: &MainWindow,
+    calibration: Rc<RefCell<CalibrationSession>>,
+    impacts: Rc<RefCell<Vec<Impact>>>,
+    selected_impact: Rc<RefCell<Option<usize>>>,
+    moving_impact: Rc<RefCell<bool>>,
+) {
     ui.on_target_clicked({
         let calibration = calibration.clone();
         let impacts = impacts.clone();
@@ -419,8 +269,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if let Some(ui) = ui_weak.upgrade() {
                     ui.set_moving_impact(false);
                     update_impacts_ui(&ui, &impacts);
-                    let target_distance = ui.get_target_distance();
-                    update_groupement_ui(&ui, &impacts, target_distance, calibration);
+                    update_groupement_ui(&ui, &impacts, calibration);
                 }
 
                 return;
@@ -441,39 +290,309 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(ui) = ui_weak.upgrade() {
                 ui.set_selected_impact((selected_index + 1) as i32);
                 update_impacts_ui(&ui, &impacts);
-                let target_distance = ui.get_target_distance();
-                update_groupement_ui(&ui, &impacts, target_distance, calibration);
+                update_groupement_ui(&ui, &impacts, calibration);
             }
         }
     });
+}
 
-    let timer = Timer::default();
-    let ui_weak = ui.as_weak();
-    let capture_for_timer = capture.clone();
+fn ui_impact_selected(ui: &MainWindow, selected_impact: &Rc<RefCell<Option<usize>>>) {
+    ui.on_impact_selected({
+        let selected_impact = selected_impact.clone();
+        let ui_weak = ui.as_weak();
 
-    timer.start(
-        slint::TimerMode::Repeated,
-        Duration::from_millis(33),
-        move || {
-            let frame = {
-                let capture = capture_for_timer.borrow();
-                capture
-                    .as_ref()
-                    .and_then(|capture| capture.try_receive_frame())
+        move |index| {
+            let selected_index = if index > 0 {
+                (index - 1) as usize
+            } else {
+                index as usize
             };
 
-            if let Some(frame) = frame {
-                let image = frame_to_slint_image(frame);
+            *selected_impact.borrow_mut() = Some(selected_index);
 
-                if let Some(ui) = ui_weak.upgrade() {
-                    ui.set_camera_image(image);
+            println!("Impact sélectionné : #{}", selected_index + 1);
+
+            if let Some(ui) = ui_weak.upgrade() {
+                ui.set_selected_impact((selected_index + 1) as i32);
+            }
+        }
+    });
+}
+
+fn ui_capture_target(ui: &MainWindow, calibration: &Rc<RefCell<CalibrationSession>>) {
+    ui.on_capture_target({
+        let calibration = calibration.clone();
+        let ui_weak = ui.as_weak();
+
+        move || {
+            let session = calibration.borrow();
+
+            if let Some(ui) = ui_weak.upgrade() {
+                ui.set_calibration_visible(false);
+                ui.set_calibration_complete(false);
+                ui.set_calibration_step("Aucune".into());
+                ui.set_calibration_active_point("".into());
+                ui.set_calibration_instruction("".into());
+
+                ui.set_horizontal_a_visible(false);
+                ui.set_horizontal_b_visible(false);
+                ui.set_vertical_a_visible(false);
+                ui.set_vertical_b_visible(false);
+
+                if session.calibration().is_some() {
+                    ui.set_shooting_configuration_open(false);
+                    ui.set_calibration_complete(true);
+                    ui.set_calibration_visible(false);
                 }
             }
-        },
-    );
+        }
+    });
+}
 
-    ui.run()?;
-    Ok(())
+fn ui_cancel_calibration(ui: &MainWindow, calibration: &Rc<RefCell<CalibrationSession>>) {
+    ui.on_cancel_calibration({
+        let calibration = calibration.clone();
+        let ui_weak = ui.as_weak();
+
+        move || {
+            let mut session = calibration.borrow_mut();
+            session.cancel();
+
+            if let Some(ui) = ui_weak.upgrade() {
+                update_calibration_ui(&ui, &session);
+            }
+        }
+    });
+}
+
+fn ui_request_calibration(
+    ui: &MainWindow,
+    calibration_for_start: Rc<RefCell<CalibrationSession>>,
+    ui_weak: slint::Weak<MainWindow>,
+) {
+    ui.on_request_calibration(move || {
+        let mut session = calibration_for_start.borrow_mut();
+        session.start();
+
+        println!("Calibration démarrée : {:?}", session.step());
+
+        if let Some(ui) = ui_weak.upgrade() {
+            update_calibration_ui(&ui, &session);
+        }
+    });
+}
+
+fn camera_selected(
+    ui: &MainWindow,
+    devices_for_selection: Rc<RefCell<Vec<camera::CameraDevice>>>,
+    capture_for_selection: Rc<RefCell<Option<camera::CameraCapture>>>,
+    ui_weak: slint::Weak<MainWindow>,
+) {
+    ui.on_camera_selected(move |index| {
+        if let Some(ui) = ui_weak.upgrade() {
+            ui_connect_selected_camera(
+                &ui,
+                &devices_for_selection.borrow(),
+                index as usize,
+                &capture_for_selection,
+            );
+            ui.set_camera_section_open(false);
+        }
+    });
+}
+
+fn connect_camera(
+    ui: &MainWindow,
+    devices_for_refresh: Rc<RefCell<Vec<camera::CameraDevice>>>,
+    capture_for_refresh: Rc<RefCell<Option<camera::CameraCapture>>>,
+    ui_weak: slint::Weak<MainWindow>,
+) {
+    ui.on_connect_camera(move || {
+        if let Some(ui) = ui_weak.upgrade() {
+            match load_camera_devices(&ui) {
+                Ok(new_devices) => {
+                    *devices_for_refresh.borrow_mut() = new_devices;
+
+                    if devices_for_refresh.borrow().is_empty() {
+                        capture_for_refresh.borrow_mut().take();
+                        ui.set_camera_status("Aucune caméra trouvée".into());
+                    }
+                }
+                Err(error) => {
+                    ui.set_camera_status(format!("Erreur caméra : {}", error).into());
+                }
+            }
+        }
+    });
+}
+
+fn ui_target_distance_validated(
+    ui: &MainWindow,
+    calibration: &Rc<RefCell<CalibrationSession>>,
+    impacts: &Rc<RefCell<Vec<Impact>>>,
+) {
+    ui.on_target_distance_validated({
+        let impacts = impacts.clone();
+        let calibration = calibration.clone();
+        let ui_weak = ui.as_weak();
+
+        move |_| {
+            if let Some(ui) = ui_weak.upgrade() {
+                let impacts = impacts.borrow();
+                let session = calibration.borrow();
+
+                ui.set_shooting_configuration_open(false);
+
+                let Some(calibration) = session.calibration() else {
+                    println!("Impossible de recalculer le groupement : cible non calibrée");
+                    return;
+                };
+
+                update_groupement_ui(&ui, &impacts, calibration);
+            }
+        }
+    });
+}
+
+fn ui_delete_selected_impact(
+    ui: &MainWindow,
+    calibration: &Rc<RefCell<CalibrationSession>>,
+    impacts: &Rc<RefCell<Vec<Impact>>>,
+    selected_impact: &Rc<RefCell<Option<usize>>>,
+    moving_impact: &Rc<RefCell<bool>>,
+) {
+    ui.on_delete_selected_impact({
+        let impacts = impacts.clone();
+        let selected_impact = selected_impact.clone();
+        let moving_impact = moving_impact.clone();
+        let calibration = calibration.clone();
+        let ui_weak = ui.as_weak();
+
+        move || {
+            let Some(selected_index) = *selected_impact.borrow() else {
+                return;
+            };
+
+            let mut impacts = impacts.borrow_mut();
+
+            if selected_index >= impacts.len() {
+                return;
+            }
+
+            impacts.remove(selected_index);
+
+            for (index, impact) in impacts.iter_mut().enumerate() {
+                impact.number = index as u32 + 1;
+            }
+
+            let new_selection = if impacts.is_empty() {
+                None
+            } else if selected_index >= impacts.len() {
+                Some(impacts.len() - 1)
+            } else {
+                Some(selected_index)
+            };
+
+            *selected_impact.borrow_mut() = new_selection;
+            *moving_impact.borrow_mut() = false;
+
+            if let Some(ui) = ui_weak.upgrade() {
+                ui.set_moving_impact(false);
+                ui.set_selected_impact(new_selection.map(|index| (index + 1) as i32).unwrap_or(-1));
+                update_impacts_ui(&ui, &impacts);
+
+                let session = calibration.borrow();
+                if let Some(calibration) = session.calibration() {
+                    update_groupement_ui(&ui, &impacts, calibration);
+                } else {
+                    clear_groupement_ui(&ui);
+                }
+            }
+        }
+    });
+}
+
+fn ui_move_impact(
+    ui: &MainWindow,
+    selected_impact: &Rc<RefCell<Option<usize>>>,
+    moving_impact: &Rc<RefCell<bool>>,
+) {
+    ui.on_move_selected_impact({
+        let moving_impact = moving_impact.clone();
+        let selected_impact = selected_impact.clone();
+        let ui_weak = ui.as_weak();
+
+        move || {
+            if selected_impact.borrow().is_none() {
+                return;
+            }
+
+            let new_state = !*moving_impact.borrow();
+            *moving_impact.borrow_mut() = new_state;
+
+            if let Some(ui) = ui_weak.upgrade() {
+                ui.set_moving_impact(new_state);
+            }
+        }
+    });
+}
+
+fn ui_clear_impacts(
+    ui: &MainWindow,
+    impacts: &Rc<RefCell<Vec<Impact>>>,
+    selected_impact: &Rc<RefCell<Option<usize>>>,
+    moving_impact: &Rc<RefCell<bool>>,
+) {
+    ui.on_clear_impacts({
+        let impacts = impacts.clone();
+        let selected_impact = selected_impact.clone();
+        let moving_impact = moving_impact.clone();
+        let ui_weak = ui.as_weak();
+
+        move || {
+            impacts.borrow_mut().clear();
+            *selected_impact.borrow_mut() = None;
+            *moving_impact.borrow_mut() = false;
+
+            if let Some(ui) = ui_weak.upgrade() {
+                ui.set_selected_impact(-1);
+                ui.set_moving_impact(false);
+                update_impacts_ui(&ui, &[]);
+                clear_groupement_ui(&ui);
+            }
+        }
+    });
+}
+
+fn ui_calibration_distances_validated(
+    ui: &MainWindow,
+    calibration: &Rc<RefCell<CalibrationSession>>,
+) {
+    ui.on_calibration_distances_validated({
+        let calibration = calibration.clone();
+        let ui_weak = ui.as_weak();
+
+        move || {
+            let mut session = calibration.borrow_mut();
+
+            if let Some(ui) = ui_weak.upgrade() {
+                let horizontal = ui.get_calibration_horizontal_distance();
+                let vertical = ui.get_calibration_vertical_distance();
+
+                if let Err(error) = session.set_reference_distances(horizontal, vertical) {
+                    println!("Distances de calibration invalides : {:?}", error);
+                }
+
+                if session.is_complete() {
+                    if let Err(error) = session.build_calibration(horizontal, vertical) {
+                        println!("Impossible de reconstruire la calibration : {:?}", error);
+                    }
+                }
+
+                update_calibration_ui(&ui, &session);
+            }
+        }
+    });
 }
 
 fn clear_groupement_ui(window: &MainWindow) {
@@ -488,11 +607,12 @@ fn clear_groupement_ui(window: &MainWindow) {
 fn update_groupement_ui(
     window: &MainWindow,
     impacts: &[Impact],
-    target_distance: f32,
     calibration: &crate::cible::calibration::Calibration,
 ) {
     window.set_impact_count(impacts.len() as i32);
-
+    if impacts.len() < 2 {
+        return;
+    }
     let Some(groupement) = calculate_groupement(impacts) else {
         return;
     };
@@ -505,11 +625,14 @@ fn update_groupement_ui(
     let Some(average_impact) = calculate_center(&calibrated_points) else {
         return;
     };
-
+    //Affichage du PMI
     let average_impact_image = calibration.mm_to_pixel(average_impact);
     window.set_average_impact_image_x(average_impact_image.x);
     window.set_average_impact_image_y(average_impact_image.y);
     window.set_average_impact_visible(calibrated_points.len() >= 2);
+
+    let target_distance = window.get_target_distance();
+    println!("Distance de cible : {}", target_distance);
 
     let average_distance_mrad = average_impact.distance_to(Point::new(0.0, 0.0)) / target_distance;
     let average_offset_x_mrad = average_impact.x / target_distance;
@@ -585,7 +708,7 @@ fn update_groupement_ui(
     );
     window.set_average_impact_offset(
         format!(
-            "{:.2} mrad / {:.2} MOA · X {:.2} / Y {:.2} mrad · X {:.2} / Y {:.2} MOA",
+            "\r\n\t{:.2} mrad / {:.2} MOA \r\n\tX {:.2} / Y {:.2} mrad \r\n\tX {:.2} / Y {:.2} MOA",
             average_distance_mrad,
             average_distance_moa,
             average_offset_x_mrad,
